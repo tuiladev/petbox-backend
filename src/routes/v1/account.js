@@ -1,13 +1,15 @@
 import express from 'express'
 import { StatusCodes } from 'http-status-codes'
-import { accountValidation, userValidation } from '~/validations/accountValidation'
+import { accountValidation } from '~/validations/accountValidation'
+import { accountController } from '~/controllers/accountController'
 
 const Router = express.Router()
 
-Router.route('/abc')
+Router.route('/:id')
   .get((req, res) => {
-    res.status(StatusCodes.OK).json({ message: 'GET: Account logined!' })
+    res.status(StatusCodes.OK).json({ message: 'GET: Account authenticated!' })
   })
-  .post(accountValidation.createNew)
+  // post(define layer to excute the request: server -> validation -> middleware -> controller -> model -> response to browser)
+  .post(accountValidation.createNew, accountController.createNew)
 
 export const accountRoutes = Router

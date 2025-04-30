@@ -1,4 +1,5 @@
 import { StatusCodes } from 'http-status-codes'
+import { accountService } from '~/services/accountService'
 
 const createNew = async (req, res, next) => {
   try {
@@ -11,9 +12,10 @@ const createNew = async (req, res, next) => {
     console.log('req.files: ', req.files)
 
     // Route to services layer to excute data -> next to model layer
+    const createdAccount = await accountService.createNew(req.body)
 
     // After all, data comback here and controller respond to the client
-    res.status(StatusCodes.CREATED).json({ message: 'POST: account created' })
+    res.status(StatusCodes.CREATED).json(createdAccount)
   } catch (error) {
     next(error)
   }

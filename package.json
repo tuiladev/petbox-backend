@@ -1,6 +1,5 @@
 {
   "name": "petbox-api",
-  "type": "module",
   "version": "1.0.0",
   "main": "src/server.js",
   "author": "tinydevin",
@@ -8,7 +7,8 @@
   "private": true,
   "dependencies": {
     "@babel/runtime": "^7.27.0",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "mongodb": "^6.16.0"
   },
   "scripts": {
     "lint": "eslint src --ext js --report-unused-disable-directives --max-warnings 0",
@@ -26,7 +26,9 @@
     "@babel/plugin-transform-runtime": "^7.26.10",
     "@babel/preset-env": "^7.26.9",
     "babel-plugin-module-resolver": "^5.0.2",
+    "dotenv": "^16.5.0",
     "eslint": "^9.25.1",
+    "globals": "^16.0.0",
     "nodemon": "^3.1.10"
   }
 }

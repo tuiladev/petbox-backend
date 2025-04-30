@@ -15,9 +15,7 @@ const createNew = async (req, res, next) => {
     // After all, data comback here and controller respond to the client
     res.status(StatusCodes.CREATED).json({ message: 'POST: account created' })
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      errors: error.message
-    })
+    next(error)
   }
 }
 

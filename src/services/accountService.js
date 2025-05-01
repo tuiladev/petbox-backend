@@ -1,5 +1,6 @@
 /* eslint-disable no-useless-catch */
 import { slugify } from '~/utils/formatters'
+import { accountModel } from '~/models/accountModel'
 
 const createNew = async (reqBody) => {
   try {
@@ -10,9 +11,13 @@ const createNew = async (reqBody) => {
     }
 
     // Route to model -> next step
+    const createdAccount = await accountModel.createNew(newAccount)
+
+    // Retrive record from database if needed for frontend porpose
+    const getNewAccount = await accountModel.findOneById(createdAccount.insertedId)
 
     // Must have return to avoid service infinite loop !
-    return newAccount
+    return getNewAccount
   } catch (error) {
     throw error
   }

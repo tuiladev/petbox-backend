@@ -5,7 +5,7 @@ import { accountController } from '~/controllers/accountController'
 
 const Router = express.Router()
 
-Router.route('/:id')
+Router.route('/')
   .get((req, res) => {
     res.status(StatusCodes.OK).json({ message: 'GET: Account authenticated!' })
   })

@@ -1,7 +1,7 @@
 /* eslint-disable no-useless-catch */
 import { StatusCodes } from 'http-status-codes'
-import bcryptjs from 'bcryptjs'
 import { v4 as uuidv4 } from 'uuid'
+import { ArgonProvider } from '~/providers/ArgonProvider'
 import { userModel } from '~/models/userModel'
 import ApiError from '~/utils/ApiError'
 import { pickUser } from '~/utils/formatters'
@@ -23,7 +23,7 @@ const createNew = async (reqBody) => {
       fullName: reqBody.fullName,
       email: reqBody.email,
       phoneNumber: reqBody.phoneNumber,
-      password: bcryptjs.hashSync(reqBody.password, 8),
+      password: await ArgonProvider.hashPassword(reqBody.password),
       verifyToken: uuidv4()
     }
 
@@ -85,7 +85,7 @@ const login = async (reqBody) => {
     if (!existUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Email chưa được xác minh!')
 
     // Check if password is not correct
-    const isPasswordCorrect = bcryptjs.compareSync(reqBody.password, existUser.password)
+    const isPasswordCorrect = await ArgonProvider.verifyPasswordWithHash(reqBody.password, existUser.password)
     if (!isPasswordCorrect) throw new ApiError(StatusCodes.UNAUTHORIZED, 'Sai thông tin đăng nhập!')
 
     // Create payload data for token

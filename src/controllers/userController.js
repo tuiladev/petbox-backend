@@ -1,6 +1,7 @@
-import { StatusCodes } from 'http-status-codes'
-import { userService } from '~/services/userService'
 import ms from 'ms'
+import { StatusCodes } from 'http-status-codes'
+import { env } from '~/config/environment'
+import { userService } from '~/services/userService'
 import ApiError from '~/utils/ApiError'
 
 const createNew = async (req, res, next) => {
@@ -31,16 +32,18 @@ const login = async (req, res, next) => {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
-      maxAge: ms('14 days')
+      maxAge: ms(env.ACCESS_TOKEN_LIFE + env.BUFFER_TIME)
     })
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
-      maxAge: ms('14 days')
+      maxAge: ms(env.REFRESH_TOKEN_LIFE + env.BUFFER_TIME)
     })
 
-    res.status(StatusCodes.OK).json(result)
+    // Remove token from res.body
+    const { accessToken, refreshToken, ...userInfo } = result
+    res.status(StatusCodes.OK).json(userInfo)
   }
   catch (error) {
     next(error)
@@ -69,7 +72,7 @@ const refreshToken = async (req, res, next) => {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
-      maxAge: ms('14 days')
+      maxAge: ms(env.ACCESS_TOKEN_LIFE) + env.BUFFER_TIME
     })
 
     res.status(StatusCodes.OK).json(result)

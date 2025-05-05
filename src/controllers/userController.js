@@ -65,7 +65,7 @@ const refreshToken = async (req, res, next) => {
     const result = await userService.refreshToken(req.cookies?.refreshToken)
 
     // Return new Http only cookies to client
-    res.cookies('accessToken', result.accessToken, {
+    res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
       secure: true,
       sameSite: 'none',

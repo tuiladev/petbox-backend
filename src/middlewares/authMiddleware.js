@@ -26,7 +26,7 @@ const isAuthorized = async (req, res, next) => {
   }
   catch (error) {
     // Access token is exprired
-    if (error?.message?.incluces('jwt expired')) {
+    if (error?.message?.includes('jwt expired')) {
       next(new ApiError(StatusCodes.GONE, 'Need to refresh token'))
       return
     }

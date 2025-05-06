@@ -7,6 +7,7 @@ export const pickUser = (user) => {
     'id',
     'fullName',
     'email',
+    'phoneNumber',
     'avatar',
     'role',
     'isActive',

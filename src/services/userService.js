@@ -1,21 +1,18 @@
 /* eslint-disable no-useless-catch */
 import { StatusCodes } from 'http-status-codes'
-import { v4 as uuidv4 } from 'uuid'
 import { ArgonProvider } from '~/providers/ArgonProvider'
 import { userModel } from '~/models/userModel'
 import ApiError from '~/utils/ApiError'
 import { pickUser } from '~/utils/formatters'
-import { WEBSITE_DOMAIN } from '~/utils/constants'
-import { BrevoProvider } from '~/providers/BrevoProvider'
 import { JwtProvider } from '~/providers/JwtProvider'
 import { env } from '~/config/environment'
 
 const createNew = async (reqBody) => {
   try {
-    // Check if user_email already exists
-    const existUser = await userModel.findOneByEmail(reqBody.email)
+    // Check if user_phone already exists
+    const existUser = await userModel.findOneByPhone(reqBody.phoneNumber)
     if (existUser) {
-      throw new ApiError(StatusCodes.CONFLICT, 'Email đã tồn tại!')
+      throw new ApiError(StatusCodes.CONFLICT, 'Số điện thoại đã tồn tại!')
     }
 
     // Create data to store
@@ -23,25 +20,14 @@ const createNew = async (reqBody) => {
       fullName: reqBody.fullName,
       email: reqBody.email,
       phoneNumber: reqBody.phoneNumber,
-      password: await ArgonProvider.hashPassword(reqBody.password),
-      verifyToken: uuidv4()
+      birthDate: reqBody.birthDate,
+      gender: reqBody.gender,
+      password: await ArgonProvider.hashPassword(reqBody.password)
     }
 
     // Store data to database
     const createdUser = await userModel.createNew(newUser)
     const getNewUser = await userModel.findOneById(createdUser.insertedId)
-
-    // Verify email using Brevo
-    const verificationLink = `${WEBSITE_DOMAIN}/account/verification?email=${getNewUser.email}&token=${getNewUser.verifyToken}`
-    const customSubject = 'Xác thực tài khoản email'
-    const htmlContent = `
-      <h2>Hãy xác thực tài khoản email của bạn !</h2>
-      <p>Nhấn <a href="${verificationLink}">vào đây</a> để xác thực email</p>
-      <h2>Trân trọng, <br/> - The Pet's Box - Phòng Khám Thú Y Thủ Đức</h2>
-    `
-
-    // Call provider brevo to send mail
-    await BrevoProvider.sendEmail(getNewUser.email, customSubject, htmlContent)
 
     // Return result to controller
     return pickUser(getNewUser)
@@ -50,39 +36,13 @@ const createNew = async (reqBody) => {
   }
 }
 
-const verifyAccount = async (reqBody) => {
-  try {
-    // Query user in Database
-    const existUser = await userModel.findOneByEmail(reqBody.email)
-
-    // Check if user_email is not exists
-    if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Email not found!')
-    if (existUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Email already verified!')
-    if (existUser.verifyToken !== reqBody.token) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Token is not valid!')
-
-    // Update user to active
-    const updateData = {
-      isActive: true,
-      verifyToken: null
-    }
-
-    // Update user in Database
-    const updatedUser = await userModel.update(existUser._id, updateData)
-    return pickUser(updatedUser)
-  }
-  catch (error) {
-    throw error
-  }
-}
-
 const login = async (reqBody) => {
   try {
     // Query user in Database
-    const existUser = await userModel.findOneByEmail(reqBody.email)
+    const existUser = await userModel.findOneByPhone(reqBody.phoneNumber)
 
-    // Check if user_email is not exists
-    if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Email không tồn tại !')
-    if (!existUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Email chưa được xác minh!')
+    // Check if user_phoneNumber is not exists
+    if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tồn tại !')
 
     // Check if password is not correct
     const isPasswordCorrect = await ArgonProvider.verifyPasswordWithHash(reqBody.password, existUser.password)
@@ -91,7 +51,7 @@ const login = async (reqBody) => {
     // Create payload data for token
     const userInfo = {
       _id: existUser._id,
-      email: existUser.email
+      phoneNumber: existUser.phoneNumber
     }
 
     // Create 2 type of token: access token and refresh token
@@ -148,9 +108,40 @@ const refreshToken = async (clientRefreshToken) => {
   }
 }
 
+const update = async (userId, reqBody) => {
+  try {
+    // Query user in Database
+    const existUser = await userModel.findOneById(userId)
+    if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tồn tại !')
+
+    // Init updatedUser
+    let updatedUser = {}
+
+    // CASE 1: Change password
+    if (reqBody.currentPassword && reqBody.newPassword) {
+      // Check if current password is correct
+      if (!await ArgonProvider.verifyPasswordWithHash(reqBody.currentPassword, existUser.password))
+        throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Mật khẩu hiện tại không đúng!')
+
+      // Hash new password
+      updatedUser = await userModel.update(userId, { password: await ArgonProvider.hashPassword(reqBody.newPassword) })
+    }
+    // CASE 2: Update other info
+    else {
+      updatedUser = await userModel.update(userId, reqBody)
+    }
+
+    // Return to controller
+    return pickUser(updatedUser)
+  }
+  catch (error) {
+    throw error
+  }
+}
+
 export const userService = {
   createNew,
-  verifyAccount,
   login,
-  refreshToken
+  refreshToken,
+  update
 }

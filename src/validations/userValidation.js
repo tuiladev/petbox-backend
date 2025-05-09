@@ -6,7 +6,9 @@ import { EMAIL_RULE, EMAIL_RULE_MESSAGE, PASSWORD_RULE, PASSWORD_RULE_MESSAGE, P
 const createNew = async (req, res, next) => {
   const correctCondition = Joi.object({
     fullName: Joi.string().required().min(5).max(30).trim().strict(),
-    email: Joi.string().required().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
+    birthDate: Joi.date().required(),
+    gender: Joi.string().required().valid('male', 'female', 'other'),
+    email: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
     phoneNumber: Joi.string().required().pattern(PHONE_RULE).message(PHONE_RULE_MESSAGE),
     password: Joi.string().required().pattern(PASSWORD_RULE).message(PASSWORD_RULE_MESSAGE)
   })
@@ -35,8 +37,25 @@ const verifyAccount = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   const correctCondition = Joi.object({
-    email: Joi.string().required().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
+    phoneNumber: Joi.string().required().pattern(PHONE_RULE).message(PHONE_RULE_MESSAGE),
     password: Joi.string().required().pattern(PASSWORD_RULE).message('Sai thông tin đăng nhập!')
+  })
+
+  try {
+    await correctCondition.validateAsync(req.body, { abortEarly: false })
+    next()
+  } catch (error) {
+    next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
+  }
+}
+
+const update = async (req, res, next) => {
+  const correctCondition = Joi.object({
+    fullName: Joi.string().min(5).max(30).trim(),
+    email: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
+    phoneNumber: Joi.string().pattern(PHONE_RULE).message(PHONE_RULE_MESSAGE),
+    currentPassword: Joi.string().pattern(PASSWORD_RULE).message(`Mật khẩu cũ: ${PASSWORD_RULE_MESSAGE}`),
+    newPassword: Joi.string().pattern(PASSWORD_RULE).message(`Mật khẩu mới: ${PASSWORD_RULE_MESSAGE}`)
   })
 
   try {
@@ -50,5 +69,6 @@ const login = async (req, res, next) => {
 export const userValidation = {
   createNew,
   verifyAccount,
-  login
+  login,
+  update
 }

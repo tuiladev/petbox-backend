@@ -20,6 +20,7 @@ const isAuthorized = async (req, res, next) => {
 
     // Set token to user
     req.JwtDecoded = accessTokenDecoded
+    console.log('accessTokenDecoded', accessTokenDecoded)
 
     // Route to validation layer
     next()

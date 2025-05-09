@@ -15,15 +15,17 @@ const USER_COLLECTION_NAME = 'users'
 const USER_COLLECTION_SCHEMA = Joi.object({
   // Use regex to validate ObjectId (because no Object validate in Joi)
   fullName: Joi.string().required().min(5).max(30).trim().strict(),
-  email: Joi.string().required().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
+  birthDate: Joi.date().required(),
+  gender: Joi.string().required().valid('male', 'female', 'other'),
+  email: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
   phoneNumber: Joi.string().required().pattern(PHONE_RULE).message(PHONE_RULE_MESSAGE),
   password: Joi.string().required().pattern(PASSWORD_RULE).message(PASSWORD_RULE_MESSAGE),
 
   // username take from email
   avatar: Joi.string().default(null),
   role: Joi.string().valid(USER_ROLES.CLIENT, USER_ROLES.ADMIN, USER_ROLES.STAFF).default(USER_ROLES.CLIENT),
-  isActive: Joi.boolean().default(false),
-  verifyToken: Joi.string(),
+  // isActive: Joi.boolean().default(false),
+  // verifyToken: Joi.string(),
 
   petIds: Joi.array().items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)).default(null),
 
@@ -59,11 +61,11 @@ const findOneById = async (userId) => {
   }
 }
 
-const findOneByEmail = async (email) => {
+const findOneByPhone = async (phoneNumber) => {
   try {
     return await GET_DB()
       .collection(USER_COLLECTION_NAME)
-      .findOne({ email })
+      .findOne({ phoneNumber })
   } catch (error) {
     throw new Error(error)
   }
@@ -97,6 +99,6 @@ export const userModel = {
   USER_COLLECTION_SCHEMA,
   createNew,
   findOneById,
-  findOneByEmail,
+  findOneByPhone,
   update
 }

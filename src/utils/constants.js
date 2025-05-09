@@ -1,6 +1,6 @@
 import { env } from '~/config/environment'
 export const WHITELIST_DOMAINS = [
-  'http://localhost:5173'
+  // 'http://localhost:5173' cause set for dev mode via cors.js
   // Another the domain you want to whitelist
 ]
 

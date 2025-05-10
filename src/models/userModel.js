@@ -15,11 +15,11 @@ const USER_COLLECTION_NAME = 'users'
 const USER_COLLECTION_SCHEMA = Joi.object({
   // Use regex to validate ObjectId (because no Object validate in Joi)
   fullName: Joi.string().required().min(5).max(30).trim().strict(),
-  birthDate: Joi.date().required(),
-  gender: Joi.string().required().valid('male', 'female', 'other'),
+  birthDate: Joi.date().allow(null),
+  gender: Joi.string().valid('male', 'female', 'other').allow(null),
   email: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
-  phoneNumber: Joi.string().required().pattern(PHONE_RULE).message(PHONE_RULE_MESSAGE),
-  password: Joi.string().required().pattern(PASSWORD_RULE).message(PASSWORD_RULE_MESSAGE),
+  phoneNumber: Joi.string().pattern(PHONE_RULE).message(PHONE_RULE_MESSAGE).allow(null),
+  password: Joi.string().required().pattern(PASSWORD_RULE).message(PASSWORD_RULE_MESSAGE).allow(null),
 
   // Social ID
   googleID: Joi.string().default(null),
@@ -84,19 +84,11 @@ const findOrCreateByGGId = async (userData) => {
 
     // Create new user if not found
     const newUserData = {
-      fullName: userData.name || '',
-      birthDate: userData.birthDate || new Date(),
-      gender: userData.gender || 'other',
-      email: userData.email || '',
-      phoneNumber: userData.phoneNumber || '',
+      fullName: userData.name,
+      email: userData.email,
       password: '',
       googleID: userData.sub,
-      avatar: userData.picture || null,
-      role: USER_ROLES.CLIENT,
-      petIds: [],
-      createdAt: Date.now(),
-      updatedAt: null,
-      _destroy: false
+      avatar: userData.picture
     }
 
     // Create new user and return

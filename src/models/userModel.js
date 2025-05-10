@@ -19,7 +19,7 @@ const USER_COLLECTION_SCHEMA = Joi.object({
   gender: Joi.string().valid('male', 'female', 'other').allow(null),
   email: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
   phoneNumber: Joi.string().pattern(PHONE_RULE).message(PHONE_RULE_MESSAGE).allow(null),
-  password: Joi.string().required().pattern(PASSWORD_RULE).message(PASSWORD_RULE_MESSAGE).allow(null),
+  password: Joi.string().pattern(PASSWORD_RULE).message(PASSWORD_RULE_MESSAGE).allow(null),
 
   // Social ID
   googleID: Joi.string().default(null),

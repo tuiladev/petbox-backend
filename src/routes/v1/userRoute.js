@@ -8,11 +8,13 @@ const Router = express.Router()
 Router.route('/register')
   .post(userValidation.createNew, userController.createNew)
 
+// Login with account
 Router.route('/login')
   .post(userValidation.login, userController.login)
 
-Router.route('/verify')
-  .put(userValidation.verifyAccount, userController.verifyAccount)
+// Social Login
+Router.route('/google-login')
+  .post(userValidation.googleLogin, userController.googleLogin)
 
 Router.route('/logout')
   .delete(userController.logout)

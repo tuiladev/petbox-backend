@@ -58,6 +58,14 @@ const googleLogin = async (req, res, next) => {
   }
 }
 
+const zaloLogin = async (req, res, next) => {
+  const { authorization_code } = req.body.authorization_code
+  if (!authorization_code) {
+    return res.status(400).json({ message: 'Không tìm thấy code từ Zalo!' })
+  }
+  next()
+}
+
 const update = async (req, res, next) => {
   const correctCondition = Joi.object({
     fullName: Joi.string().min(5).max(30).trim(),
@@ -80,5 +88,6 @@ export const userValidation = {
   verifyAccount,
   login,
   googleLogin,
+  zaloLogin,
   update
 }

@@ -100,6 +100,33 @@ const findOrCreateByGGId = async (userData) => {
   }
 }
 
+const findOrCreateByZLId = async (userData) => {
+  try {
+    // Find user by zaloID
+    let user = await GET_DB()
+      .collection(USER_COLLECTION_NAME)
+      .findOne({ zaloID: userData.id })
+    if (user) {
+      return user
+    }
+
+    // Create new user if not found
+    const newUserData = {
+      zaloID: userData.id,
+      fullName: userData.name,
+      avatar: userData.avatar
+    }
+
+    // Create new user
+    const result = await createNew(newUserData)
+
+    // Return to service
+    return await GET_DB().collection(USER_COLLECTION_NAME).findOne({ _id: result.insertedId })
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 const update = async (userId, updateData) => {
   try {
     // Filter valid feild
@@ -130,5 +157,6 @@ export const userModel = {
   findOneById,
   findOneByPhone,
   findOrCreateByGGId,
+  findOrCreateByZLId,
   update
 }

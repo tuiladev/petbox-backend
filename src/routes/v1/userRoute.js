@@ -16,6 +16,9 @@ Router.route('/login')
 Router.route('/google-login')
   .post(userValidation.googleLogin, userController.googleLogin)
 
+Router.route('/zalo-login')
+  .post(userValidation.zaloLogin, userController.zaloLogin)
+
 Router.route('/logout')
   .delete(userController.logout)
 

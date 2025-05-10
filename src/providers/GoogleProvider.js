@@ -1,4 +1,5 @@
 import { env } from '~/config/environment'
+
 const exchangeCodeForToken = async (code) => {
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -22,6 +23,7 @@ const exchangeCodeForToken = async (code) => {
 
 const getUserInfo = async (accessToken) => {
   const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    method: 'GET',
     headers: { Authorization: `Bearer ${accessToken}` }
   })
 

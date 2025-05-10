@@ -67,6 +67,33 @@ const googleLogin = async (req, res, next) => {
   }
 }
 
+const zaloLogin = async (req, res, next) => {
+  try {
+    const result = await userService.googleLogin(req.body)
+
+    // Return Http only cookies to client
+    res.cookie('accessToken', result.accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: ms(env.ACCESS_TOKEN_LIFE + env.BUFFER_TIME)
+    })
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: ms(env.REFRESH_TOKEN_LIFE + env.BUFFER_TIME)
+    })
+
+    // Remove token from res.body
+    const { accessToken, refreshToken, ...userInfo } = result
+    res.status(StatusCodes.OK).json(userInfo)
+  }
+  catch (error) {
+    next(error)
+  }
+}
+
 const logout = async (req, res, next) => {
   try {
     // Clear cookies
@@ -113,6 +140,7 @@ export const userController = {
   createNew,
   login,
   googleLogin,
+  zaloLogin,
   logout,
   refreshToken,
   update

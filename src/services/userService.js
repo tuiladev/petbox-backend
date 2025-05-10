@@ -7,6 +7,7 @@ import { pickUser } from '~/utils/formatters'
 import { ArgonProvider } from '~/providers/ArgonProvider'
 import { JwtProvider } from '~/providers/JwtProvider'
 import { GoogleProvider } from '~/providers/GoogleProvider'
+import { ZaloProvider } from '~/providers/ZaloProvider'
 
 const createNew = async (reqBody) => {
   try {
@@ -122,6 +123,49 @@ const googleLogin = async (reqBody) => {
   }
 }
 
+const zaloLogin = async (reqBody) => {
+  try {
+    // Exchange code for access token
+    const zaloAccessToken = await ZaloProvider.exchangeCodeForToken(reqBody)
+
+    // Get user info from google
+    const userData = await ZaloProvider.getUserInfo(zaloAccessToken)
+
+    // Query user in Database
+    const existUser = await userModel.findOrCreateByZLId(userData)
+
+    // Check if user_google is not exists
+    if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tồn tại !')
+
+    // Create payload data for token
+    const userInfo = {
+      _id: existUser._id
+    }
+
+    // Create 2 type of token: access token and refresh token
+    const accessToken = await JwtProvider.generateToken(
+      userInfo,
+      env.ACCESS_TOKEN_SECRET_SIGNATURE,
+      env.ACCESS_TOKEN_LIFE
+    )
+    const refreshToken = await JwtProvider.generateToken(
+      userInfo,
+      env.REFRESH_TOKEN_SECRET_SIGNATURE,
+      env.REFRESH_TOKEN_LIFE
+    )
+
+    // Return info to controller
+    return {
+      accessToken,
+      refreshToken,
+      ...pickUser(existUser)
+    }
+  }
+  catch (error) {
+    throw error
+  }
+}
+
 const refreshToken = async (clientRefreshToken) => {
   try {
     // Verify refresh token
@@ -187,6 +231,7 @@ export const userService = {
   createNew,
   login,
   googleLogin,
+  zaloLogin,
   refreshToken,
   update
 }

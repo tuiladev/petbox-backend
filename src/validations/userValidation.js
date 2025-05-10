@@ -59,8 +59,8 @@ const googleLogin = async (req, res, next) => {
 }
 
 const zaloLogin = async (req, res, next) => {
+  const { authorization_code, codeVerifier } = req.body
   console.log(req.body)
-  const { authorization_code } = req.body.authorization_code
   if (!authorization_code) {
     return res.status(400).json({ message: 'Không tìm thấy code từ Zalo!' })
   }

@@ -15,8 +15,8 @@ const exchangeCodeForToken = async (code) => {
   if (!response.ok) {
     throw new Error(`Lỗi khi trao đổi code: ${response.status} ${response.statusText}`)
   }
-  console.log('Token Response:', await response.access_token) // in ra dữ liệu thật
-  return response.access_token
+  console.log('Token Response:', await response.json().access_token) // in ra dữ liệu thật
+  return response.json().access_token
 }
 
 

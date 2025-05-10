@@ -13,19 +13,36 @@ const createNew = async (req, res, next) => {
   }
 }
 
-const verifyAccount = async (req, res, next) => {
+const login = async (req, res, next) => {
   try {
-    const result = await userService.verifyAccount(req.body)
-    res.status(StatusCodes.OK).json(result)
+    const result = await userService.login(req.body)
+
+    // Return Http only cookies to client
+    res.cookie('accessToken', result.accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: ms(env.ACCESS_TOKEN_LIFE + env.BUFFER_TIME)
+    })
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: ms(env.REFRESH_TOKEN_LIFE + env.BUFFER_TIME)
+    })
+
+    // Remove token from res.body
+    const { accessToken, refreshToken, ...userInfo } = result
+    res.status(StatusCodes.OK).json(userInfo)
   }
   catch (error) {
     next(error)
   }
 }
 
-const login = async (req, res, next) => {
+const googleLogin = async (req, res, next) => {
   try {
-    const result = await userService.login(req.body)
+    const result = await userService.googleLogin(req.body)
 
     // Return Http only cookies to client
     res.cookie('accessToken', result.accessToken, {
@@ -94,8 +111,8 @@ const update = async (req, res, next) => {
 
 export const userController = {
   createNew,
-  verifyAccount,
   login,
+  googleLogin,
   logout,
   refreshToken,
   update

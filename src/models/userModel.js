@@ -21,11 +21,12 @@ const USER_COLLECTION_SCHEMA = Joi.object({
   phoneNumber: Joi.string().required().pattern(PHONE_RULE).message(PHONE_RULE_MESSAGE),
   password: Joi.string().required().pattern(PASSWORD_RULE).message(PASSWORD_RULE_MESSAGE),
 
-  // username take from email
+  // Social ID
+  googleID: Joi.string().default(null),
+  zaloID: Joi.string().default(null),
+
   avatar: Joi.string().default(null),
   role: Joi.string().valid(USER_ROLES.CLIENT, USER_ROLES.ADMIN, USER_ROLES.STAFF).default(USER_ROLES.CLIENT),
-  // isActive: Joi.boolean().default(false),
-  // verifyToken: Joi.string(),
 
   petIds: Joi.array().items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)).default(null),
 
@@ -71,6 +72,16 @@ const findOneByPhone = async (phoneNumber) => {
   }
 }
 
+const findOneByGGId = async (googleID) => {
+  try {
+    return await GET_DB()
+      .collection(USER_COLLECTION_NAME)
+      .findOne({ googleID })
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 const update = async (userId, updateData) => {
   try {
     // Filter valid feild
@@ -100,5 +111,6 @@ export const userModel = {
   createNew,
   findOneById,
   findOneByPhone,
+  findOneByGGId,
   update
 }

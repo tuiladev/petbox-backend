@@ -49,6 +49,15 @@ const login = async (req, res, next) => {
   }
 }
 
+const googleLogin = async (req, res, next) => {
+  const { code } = req.body
+  if (!code) {
+    next(new ApiError(StatusCodes.BAD_REQUEST, 'Không tìm thấy mã code từ Google!'))
+  } else {
+    next()
+  }
+}
+
 const update = async (req, res, next) => {
   const correctCondition = Joi.object({
     fullName: Joi.string().min(5).max(30).trim(),
@@ -70,5 +79,6 @@ export const userValidation = {
   createNew,
   verifyAccount,
   login,
+  googleLogin,
   update
 }

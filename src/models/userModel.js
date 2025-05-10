@@ -86,7 +86,6 @@ const findOrCreateByGGId = async (userData) => {
     const newUserData = {
       fullName: userData.name,
       email: userData.email,
-      password: '',
       googleID: userData.sub,
       avatar: userData.picture
     }

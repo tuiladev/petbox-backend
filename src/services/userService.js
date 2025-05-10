@@ -91,9 +91,6 @@ const googleLogin = async (reqBody) => {
     // Query user in Database
     const existUser = await userModel.findOrCreateByGGId(userData)
 
-    // Check if user_google is not exists
-    if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tồn tại !')
-
     // Create payload data for token
     const userInfo = {
       _id: existUser._id
@@ -133,9 +130,6 @@ const zaloLogin = async (reqBody) => {
 
     // Query user in Database
     const existUser = await userModel.findOrCreateByZLId(userData)
-
-    // Check if user_google is not exists
-    if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tồn tại !')
 
     // Create payload data for token
     const userInfo = {

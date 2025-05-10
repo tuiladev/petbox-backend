@@ -122,8 +122,10 @@ const googleLogin = async (reqBody) => {
 
 const zaloLogin = async (reqBody) => {
   try {
-    const { zaloAccessToken, zaloRefreshToken } = await ZaloProvider.exchangeCodeForToken(reqBody)
-    console.log('Service token found: ', zaloAccessToken, 'AND=> ', zaloRefreshToken)
+    const {
+      access_token: zaloAccessToken,
+      refresh_token: zaloRefreshToken
+    } = await ZaloProvider.exchangeCodeForToken(reqBody)
 
     // Get user info from google
     const userData = await ZaloProvider.getUserInfo(zaloAccessToken, zaloRefreshToken, env.ZALO_APP_ID, env.ZALO_APP_SECRET)

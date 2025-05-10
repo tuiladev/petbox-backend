@@ -8,8 +8,6 @@ const exchangeCodeForToken = async (data) => {
   params.append('grant_type', 'authorization_code')
   params.append('code_verifier', codeVerifier)
 
-  console.log('Params: ', params.toString())
-
   const response = await fetch('https://oauth.zaloapp.com/v4/access_token', {
     method: 'POST',
     headers: {
@@ -18,10 +16,7 @@ const exchangeCodeForToken = async (data) => {
     },
     body: params
   })
-  // Nên log response body, không phải response object
-  const result = await response.json()
-  console.log('Response from zalo provider: ', result)
-  return result
+  return await response.json()
 }
 
 const refreshAccessToken = async (refreshToken, appId, secretKey) => {
@@ -67,8 +62,6 @@ const getUserInfo = async (accessToken, refreshToken, appId, secretKey) => {
   if (data.error) {
     throw new Error(`Cannot get user info: ${data.error} - ${data.message}`)
   }
-
-  console.log('Data from zalo provider: ', data)
 
   return {
     id: data.id,

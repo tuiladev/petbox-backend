@@ -16,18 +16,54 @@ const exchangeCodeForToken = async (data) => {
     })
   })
 
-  return await response.json().access_token
+  return await response.json()
 }
 
-const getUserInfo = async (accessToken) => {
-  const response = await fetch('https://graph.zalo.me/v2.0/me?fields=id,name,picture', {
-    method: 'GET',
+const refreshAccessToken = async (refreshToken, appId, secretKey) => {
+  const response = await fetch('https://oauth.zaloapp.com/v4/access_token', {
+    method: 'POST',
     headers: {
-      'access_token': accessToken
-    }
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'secret_key': secretKey
+    },
+    body: JSON.stringify({
+      refresh_token: refreshToken,
+      app_id: appId,
+      grant_type: 'refresh_token'
+    })
   })
+
   const data = await response.json()
-  console.log('Data recived: ', data)
+  if (data.error) {
+    throw new Error(`Refresh token failed: ${data.error} - ${data.message}`)
+  }
+  return data.access_token
+}
+
+const getUserInfo = async (accessToken, refreshToken, appId, secretKey) => {
+  const fetchUser = async (token) => {
+    const response = await fetch('https://graph.zalo.me/v2.0/me?fields=id,name,picture', {
+      method: 'GET',
+      headers: {
+        'access_token': token
+      }
+    })
+    return await response.json()
+  }
+
+  let data = await fetchUser(accessToken)
+
+  if (data.error) {
+    const newAccessToken = await refreshAccessToken(refreshToken, appId, secretKey)
+    data = await fetchUser(newAccessToken)
+  }
+
+  if (data.error) {
+    throw new Error(`Cannot get user info: ${data.error} - ${data.message}`)
+  }
+
+  console.log('Data from zalo provider: ', data)
+
   return {
     id: data.id,
     name: data.name,

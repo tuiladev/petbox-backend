@@ -123,10 +123,11 @@ const googleLogin = async (reqBody) => {
 const zaloLogin = async (reqBody) => {
   try {
     // Exchange code for access token
-    const zaloAccessToken = await ZaloProvider.exchangeCodeForToken(reqBody)
+    const zaloAccessToken = await ZaloProvider.exchangeCodeForToken(reqBody).access_token
+    const zaloRefreshToken = await ZaloProvider.exchangeCodeForToken(reqBody).refresh_token
 
     // Get user info from google
-    const userData = await ZaloProvider.getUserInfo(zaloAccessToken)
+    const userData = await ZaloProvider.getUserInfo(zaloAccessToken, zaloRefreshToken, env.ZALO_APP_ID, env.ZALO_APP_SECRET)
 
     // Query user in Database
     const existUser = await userModel.findOrCreateByZLId(userData)

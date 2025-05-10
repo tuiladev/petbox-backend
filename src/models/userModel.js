@@ -112,8 +112,8 @@ const findOrCreateByZLId = async (userData) => {
 
     // Create new user if not found
     const newUserData = {
-      zaloID: userData.id,
       fullName: userData.name,
+      zaloID: userData.id,
       avatar: userData.avatar
     }
 

@@ -27,6 +27,7 @@ const getUserInfo = async (accessToken) => {
     }
   })
   const data = await response.json()
+  console.log('Data recived: ', data)
   return {
     id: data.id,
     name: data.name,

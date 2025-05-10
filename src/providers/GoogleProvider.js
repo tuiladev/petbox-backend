@@ -16,23 +16,21 @@ const exchangeCodeForToken = async (code) => {
     throw new Error(`Lỗi khi trao đổi code: ${response.status} ${response.statusText}`)
   }
 
-  const data = await response.json() // chỉ đọc 1 lần
-  console.log('Token Response:', data.access_token)
+  const data = await response.json()
   return data.access_token
 }
 
 const getUserInfo = async (accessToken) => {
-  const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+  const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
     headers: { Authorization: `Bearer ${accessToken}` }
   })
 
-  if (!res.ok) {
-    const errText = await res.text() // lấy nội dung lỗi
-    throw new Error(`Lỗi lấy thông tin user: ${res.status} - ${errText}`)
+  if (!response.ok) {
+    const errText = await response.text()
+    throw new Error(`Lỗi lấy thông tin user: ${response.status} - ${errText}`)
   }
 
-  const data = await res.json()
-  console.log('User Info:', data) // in ra dữ liệu thật
+  const data = await response.json()
   return data
 }
 

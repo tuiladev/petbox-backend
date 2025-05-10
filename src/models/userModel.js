@@ -72,11 +72,35 @@ const findOneByPhone = async (phoneNumber) => {
   }
 }
 
-const findOneByGGId = async (googleID) => {
+const findOrCreateByGGId = async (userData) => {
   try {
-    return await GET_DB()
+    // Find user by googleID
+    let user = await GET_DB()
       .collection(USER_COLLECTION_NAME)
-      .findOne({ googleID })
+      .findOne({ googleID: userData.sub })
+    if (user) {
+      return user
+    }
+
+    // Create new user if not found
+    const newUserData = {
+      fullName: userData.name || '',
+      birthDate: userData.birthDate || new Date(),
+      gender: userData.gender || 'other',
+      email: userData.email || '',
+      phoneNumber: userData.phoneNumber || '',
+      password: '',
+      googleID: userData.sub,
+      avatar: userData.picture || null,
+      role: USER_ROLES.CLIENT,
+      petIds: [],
+      createdAt: Date.now(),
+      updatedAt: null,
+      _destroy: false
+    }
+
+    // Create new user and return
+    return await createNew(newUserData)
   } catch (error) {
     throw new Error(error)
   }
@@ -111,6 +135,6 @@ export const userModel = {
   createNew,
   findOneById,
   findOneByPhone,
-  findOneByGGId,
+  findOrCreateByGGId,
   update
 }

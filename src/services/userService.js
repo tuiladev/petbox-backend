@@ -83,13 +83,12 @@ const googleLogin = async (reqBody) => {
   try {
     // Exchange code for access token
     const googleAccessToken = await GoogleProvider.exchangeCodeForToken(reqBody.code)
-    console.log(googleAccessToken)
 
     // Get user info from google
     const userData = await GoogleProvider.getUserInfo(googleAccessToken)
 
     // Query user in Database
-    const existUser = await userModel.findOneByGGId(userData.id)
+    const existUser = await userModel.findOrCreateByGGId(userData)
 
     // Check if user_google is not exists
     if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tồn tại !')

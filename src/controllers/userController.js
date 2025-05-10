@@ -69,7 +69,7 @@ const googleLogin = async (req, res, next) => {
 
 const zaloLogin = async (req, res, next) => {
   try {
-    const result = await userService.googleLogin(req.body)
+    const result = await userService.zaloLogin(req.body)
 
     // Return Http only cookies to client
     res.cookie('accessToken', result.accessToken, {

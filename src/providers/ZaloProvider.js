@@ -2,7 +2,7 @@ import { env } from '~/config/environment'
 
 const exchangeCodeForToken = async (data) => {
   const { authorization_code, codeVerifier } = data
-
+  console.log('exchangeCodeForToken', data)
   const response = await fetch('https://oauth.zaloapp.com/v4/access_token ', {
     method: 'POST',
     headers: {

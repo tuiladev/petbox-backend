@@ -2,35 +2,39 @@ import { env } from '~/config/environment'
 
 const exchangeCodeForToken = async (data) => {
   const { authorization_code, codeVerifier } = data
-  const response = await fetch('https://oauth.zaloapp.com/v4/access_token ', {
+  const params = new URLSearchParams()
+  params.append('code', authorization_code)
+  params.append('app_id', env.ZALO_APP_ID)
+  params.append('grant_type', 'authorization_code')
+  params.append('code_verifier', codeVerifier)
+
+  const response = await fetch('https://oauth.zaloapp.com/v4/access_token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
       'secret_key': env.ZALO_APP_SECRET
     },
-    body: JSON.stringify({
-      code: authorization_code,
-      app_id: env.ZALO_APP_ID,
-      grant_type: 'authorization_code',
-      code_verifier: codeVerifier
-    })
+    body: params
   })
-  console.log('Response from zalo provider: ', response)
-  return await response.json()
+  // Nên log response body, không phải response object
+  const result = await response.json()
+  console.log('Response from zalo provider: ', result)
+  return result
 }
 
 const refreshAccessToken = async (refreshToken, appId, secretKey) => {
+  const params = new URLSearchParams()
+  params.append('refresh_token', refreshToken)
+  params.append('app_id', appId)
+  params.append('grant_type', 'refresh_token')
+
   const response = await fetch('https://oauth.zaloapp.com/v4/access_token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
       'secret_key': secretKey
     },
-    body: JSON.stringify({
-      refresh_token: refreshToken,
-      app_id: appId,
-      grant_type: 'refresh_token'
-    })
+    body: params
   })
 
   const data = await response.json()

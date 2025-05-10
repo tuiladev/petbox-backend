@@ -8,6 +8,8 @@ const exchangeCodeForToken = async (data) => {
   params.append('grant_type', 'authorization_code')
   params.append('code_verifier', codeVerifier)
 
+  console.log('Params: ', params.toString())
+
   const response = await fetch('https://oauth.zaloapp.com/v4/access_token', {
     method: 'POST',
     headers: {

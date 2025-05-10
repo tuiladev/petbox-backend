@@ -95,8 +95,7 @@ const googleLogin = async (reqBody) => {
 
     // Create payload data for token
     const userInfo = {
-      _id: existUser._id,
-      phoneNumber: existUser.phoneNumber
+      _id: existUser._id
     }
 
     // Create 2 type of token: access token and refresh token

@@ -15,11 +15,11 @@ const USER_COLLECTION_NAME = 'users'
 const USER_COLLECTION_SCHEMA = Joi.object({
   // Use regex to validate ObjectId (because no Object validate in Joi)
   fullName: Joi.string().required().min(5).max(30).trim().strict(),
-  birthDate: Joi.date().allow(null),
-  gender: Joi.string().valid('male', 'female', 'other').allow(null),
+  birthDate: Joi.date().default(null),
+  gender: Joi.string().valid('male', 'female', 'other').default(null),
   email: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
-  phoneNumber: Joi.string().pattern(PHONE_RULE).message(PHONE_RULE_MESSAGE).allow(null),
-  password: Joi.string().pattern(PASSWORD_RULE).message(PASSWORD_RULE_MESSAGE).allow(null),
+  phoneNumber: Joi.string().pattern(PHONE_RULE).message(PHONE_RULE_MESSAGE).default(null),
+  password: Joi.string().pattern(PASSWORD_RULE).message(PASSWORD_RULE_MESSAGE).default(null),
 
   // Social ID
   googleID: Joi.string().default(null),
@@ -90,8 +90,11 @@ const findOrCreateByGGId = async (userData) => {
       avatar: userData.picture
     }
 
-    // Create new user and return
-    return await createNew(newUserData)
+    // Create new user
+    const result = await createNew(newUserData)
+
+    // Return to service
+    return await GET_DB().collection(USER_COLLECTION_NAME).findOne({ _id: result.insertedId })
   } catch (error) {
     throw new Error(error)
   }

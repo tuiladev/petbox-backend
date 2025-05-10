@@ -83,6 +83,7 @@ const googleLogin = async (reqBody) => {
   try {
     // Exchange code for access token
     const googleAccessToken = await GoogleProvider.exchangeCodeForToken(reqBody.code)
+    console.log(googleAccessToken)
 
     // Get user info from google
     const userData = await GoogleProvider.getUserInfo(googleAccessToken)

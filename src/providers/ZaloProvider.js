@@ -15,7 +15,7 @@ const exchangeCodeForToken = async (data) => {
       code_verifier: codeVerifier
     })
   })
-
+  console.log('Response from zalo provider: ', response)
   return await response.json()
 }
 

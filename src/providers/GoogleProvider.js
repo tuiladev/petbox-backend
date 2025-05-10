@@ -15,10 +15,11 @@ const exchangeCodeForToken = async (code) => {
   if (!response.ok) {
     throw new Error(`Lỗi khi trao đổi code: ${response.status} ${response.statusText}`)
   }
-  console.log('Token Response:', await response.json().access_token) // in ra dữ liệu thật
-  return response.json().access_token
-}
 
+  const data = await response.json() // chỉ đọc 1 lần
+  console.log('Token Response:', data.access_token)
+  return data.access_token
+}
 
 const getUserInfo = async (accessToken) => {
   const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {

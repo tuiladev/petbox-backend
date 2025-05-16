@@ -1,7 +1,16 @@
 import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
-import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE, EMAIL_RULE, EMAIL_RULE_MESSAGE, PASSWORD_RULE, PASSWORD_RULE_MESSAGE, PHONE_RULE, PHONE_RULE_MESSAGE } from '~/utils/validator'
+import {
+  OBJECT_ID_RULE,
+  OBJECT_ID_RULE_MESSAGE,
+  EMAIL_RULE,
+  EMAIL_RULE_MESSAGE,
+  PASSWORD_RULE,
+  PASSWORD_RULE_MESSAGE,
+  PHONE_RULE,
+  PHONE_RULE_MESSAGE
+} from '~/utils/validator'
 
 // Define temp roles
 const USER_ROLES = {
@@ -18,17 +27,27 @@ const USER_COLLECTION_SCHEMA = Joi.object({
   birthDate: Joi.date().default(null),
   gender: Joi.string().valid('male', 'female', 'other').default(null),
   email: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
-  phoneNumber: Joi.string().pattern(PHONE_RULE).message(PHONE_RULE_MESSAGE).default(null),
-  password: Joi.string().pattern(PASSWORD_RULE).message(PASSWORD_RULE_MESSAGE).default(null),
+  phoneNumber: Joi.string()
+    .pattern(PHONE_RULE)
+    .message(PHONE_RULE_MESSAGE)
+    .default(null),
+  password: Joi.string()
+    .pattern(PASSWORD_RULE)
+    .message(PASSWORD_RULE_MESSAGE)
+    .default(null),
 
   // Social ID
   googleID: Joi.string().default(null),
   zaloID: Joi.string().default(null),
 
   avatar: Joi.string().default(null),
-  role: Joi.string().valid(USER_ROLES.CLIENT, USER_ROLES.ADMIN, USER_ROLES.STAFF).default(USER_ROLES.CLIENT),
+  role: Joi.string()
+    .valid(USER_ROLES.CLIENT, USER_ROLES.ADMIN, USER_ROLES.STAFF)
+    .default(USER_ROLES.CLIENT),
 
-  petIds: Joi.array().items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)).default(null),
+  petIds: Joi.array()
+    .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
+    .default(null),
 
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').default(null),
@@ -38,21 +57,23 @@ const USER_COLLECTION_SCHEMA = Joi.object({
 // Don't accept update feild
 const INVALID_UPDATE_FIELDS = ['_id', 'createdAt']
 
-const validateBeforeCreate = async (data) => {
+const validateBeforeCreate = async data => {
   return await USER_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
 }
 
-const createNew = async (data) => {
+const createNew = async data => {
   try {
     const validData = await validateBeforeCreate(data)
-    const createdUser = await GET_DB().collection(USER_COLLECTION_NAME).insertOne(validData)
+    const createdUser = await GET_DB()
+      .collection(USER_COLLECTION_NAME)
+      .insertOne(validData)
     return createdUser
   } catch (error) {
     throw new Error(error)
   }
 }
 
-const findOneById = async (userId) => {
+const findOneById = async userId => {
   try {
     return await GET_DB()
       .collection(USER_COLLECTION_NAME)
@@ -62,7 +83,7 @@ const findOneById = async (userId) => {
   }
 }
 
-const findOneByPhone = async (phoneNumber) => {
+const findOneByPhone = async phoneNumber => {
   try {
     return await GET_DB()
       .collection(USER_COLLECTION_NAME)
@@ -72,7 +93,7 @@ const findOneByPhone = async (phoneNumber) => {
   }
 }
 
-const findOrCreateByGGId = async (userData) => {
+const findOrCreateByGGId = async userData => {
   try {
     // Find user by googleID
     let user = await GET_DB()
@@ -94,13 +115,15 @@ const findOrCreateByGGId = async (userData) => {
     const result = await createNew(newUserData)
 
     // Return to service
-    return await GET_DB().collection(USER_COLLECTION_NAME).findOne({ _id: result.insertedId })
+    return await GET_DB()
+      .collection(USER_COLLECTION_NAME)
+      .findOne({ _id: result.insertedId })
   } catch (error) {
     throw new Error(error)
   }
 }
 
-const findOrCreateByZLId = async (userData) => {
+const findOrCreateByZLId = async userData => {
   try {
     // Find user by zaloID
     let user = await GET_DB()
@@ -121,7 +144,9 @@ const findOrCreateByZLId = async (userData) => {
     const result = await createNew(newUserData)
 
     // Return to service
-    return await GET_DB().collection(USER_COLLECTION_NAME).findOne({ _id: result.insertedId })
+    return await GET_DB()
+      .collection(USER_COLLECTION_NAME)
+      .findOne({ _id: result.insertedId })
   } catch (error) {
     throw new Error(error)
   }
@@ -130,7 +155,7 @@ const findOrCreateByZLId = async (userData) => {
 const update = async (userId, updateData) => {
   try {
     // Filter valid feild
-    Object.keys(updateData).forEach((feildName) => {
+    Object.keys(updateData).forEach(feildName => {
       if (INVALID_UPDATE_FIELDS.includes(feildName)) {
         delete updateData[feildName]
       }
@@ -144,8 +169,7 @@ const update = async (userId, updateData) => {
         { returnDocument: 'after' }
       )
     return result
-  }
-  catch (error) {
+  } catch (error) {
     throw new Error(error)
   }
 }

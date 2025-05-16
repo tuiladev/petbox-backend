@@ -1,7 +1,14 @@
 import Joi from 'joi'
 import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
-import { EMAIL_RULE, EMAIL_RULE_MESSAGE, PASSWORD_RULE, PASSWORD_RULE_MESSAGE, PHONE_RULE, PHONE_RULE_MESSAGE } from '~/utils/validator'
+import {
+  EMAIL_RULE,
+  EMAIL_RULE_MESSAGE,
+  PASSWORD_RULE,
+  PASSWORD_RULE_MESSAGE,
+  PHONE_RULE,
+  PHONE_RULE_MESSAGE
+} from '~/utils/validator'
 
 const createNew = async (req, res, next) => {
   const correctCondition = Joi.object({
@@ -9,21 +16,32 @@ const createNew = async (req, res, next) => {
     birthDate: Joi.date().required(),
     gender: Joi.string().required().valid('male', 'female', 'other'),
     email: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
-    phoneNumber: Joi.string().required().pattern(PHONE_RULE).message(PHONE_RULE_MESSAGE),
-    password: Joi.string().required().pattern(PASSWORD_RULE).message(PASSWORD_RULE_MESSAGE)
+    phoneNumber: Joi.string()
+      .required()
+      .pattern(PHONE_RULE)
+      .message(PHONE_RULE_MESSAGE),
+    password: Joi.string()
+      .required()
+      .pattern(PASSWORD_RULE)
+      .message(PASSWORD_RULE_MESSAGE)
   })
 
   try {
     await correctCondition.validateAsync(req.body, { abortEarly: false })
     next()
   } catch (error) {
-    next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
+    next(
+      new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message)
+    )
   }
 }
 
 const verifyAccount = async (req, res, next) => {
   const correctCondition = Joi.object({
-    email: Joi.string().required().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
+    email: Joi.string()
+      .required()
+      .pattern(EMAIL_RULE)
+      .message(EMAIL_RULE_MESSAGE),
     token: Joi.string().required()
   })
 
@@ -31,28 +49,40 @@ const verifyAccount = async (req, res, next) => {
     await correctCondition.validateAsync(req.body, { abortEarly: false })
     next()
   } catch (error) {
-    next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
+    next(
+      new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message)
+    )
   }
 }
 
 const login = async (req, res, next) => {
   const correctCondition = Joi.object({
-    phoneNumber: Joi.string().required().pattern(PHONE_RULE).message(PHONE_RULE_MESSAGE),
-    password: Joi.string().required().pattern(PASSWORD_RULE).message('Sai thông tin đăng nhập!')
+    phoneNumber: Joi.string()
+      .required()
+      .pattern(PHONE_RULE)
+      .message(PHONE_RULE_MESSAGE),
+    password: Joi.string()
+      .required()
+      .pattern(PASSWORD_RULE)
+      .message('Sai thông tin đăng nhập!')
   })
 
   try {
     await correctCondition.validateAsync(req.body, { abortEarly: false })
     next()
   } catch (error) {
-    next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
+    next(
+      new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message)
+    )
   }
 }
 
 const googleLogin = async (req, res, next) => {
   const { code } = req.body
   if (!code) {
-    next(new ApiError(StatusCodes.BAD_REQUEST, 'Không tìm thấy mã code từ Google!'))
+    next(
+      new ApiError(StatusCodes.BAD_REQUEST, 'Không tìm thấy mã code từ Google!')
+    )
   } else {
     next()
   }
@@ -72,15 +102,21 @@ const update = async (req, res, next) => {
     fullName: Joi.string().min(5).max(30).trim(),
     email: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
     phoneNumber: Joi.string().pattern(PHONE_RULE).message(PHONE_RULE_MESSAGE),
-    currentPassword: Joi.string().pattern(PASSWORD_RULE).message(`Mật khẩu cũ: ${PASSWORD_RULE_MESSAGE}`),
-    newPassword: Joi.string().pattern(PASSWORD_RULE).message(`Mật khẩu mới: ${PASSWORD_RULE_MESSAGE}`)
+    currentPassword: Joi.string()
+      .pattern(PASSWORD_RULE)
+      .message(`Mật khẩu cũ: ${PASSWORD_RULE_MESSAGE}`),
+    newPassword: Joi.string()
+      .pattern(PASSWORD_RULE)
+      .message(`Mật khẩu mới: ${PASSWORD_RULE_MESSAGE}`)
   })
 
   try {
     await correctCondition.validateAsync(req.body, { abortEarly: false })
     next()
   } catch (error) {
-    next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
+    next(
+      new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message)
+    )
   }
 }
 

@@ -8,7 +8,7 @@ const hashingConfig = {
   timeCost: 3
 }
 
-const hashPassword = async (password) => {
+const hashPassword = async password => {
   let salt = crypto.randomBytes(16)
   return await argon2.hash(password, {
     ...hashingConfig,

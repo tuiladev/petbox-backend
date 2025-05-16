@@ -34,8 +34,7 @@ const login = async (req, res, next) => {
     // Remove token from res.body
     const { accessToken, refreshToken, ...userInfo } = result
     res.status(StatusCodes.OK).json(userInfo)
-  }
-  catch (error) {
+  } catch (error) {
     next(error)
   }
 }
@@ -61,8 +60,7 @@ const googleLogin = async (req, res, next) => {
     // Remove token from res.body
     const { accessToken, refreshToken, ...userInfo } = result
     res.status(StatusCodes.OK).json(userInfo)
-  }
-  catch (error) {
+  } catch (error) {
     next(error)
   }
 }
@@ -88,8 +86,7 @@ const zaloLogin = async (req, res, next) => {
     // Remove token from res.body
     const { accessToken, refreshToken, ...userInfo } = result
     res.status(StatusCodes.OK).json(userInfo)
-  }
-  catch (error) {
+  } catch (error) {
     next(error)
   }
 }
@@ -121,7 +118,12 @@ const refreshToken = async (req, res, next) => {
 
     res.status(StatusCodes.OK).json(result)
   } catch (error) {
-    next(new ApiError(StatusCodes.FORBIDDEN, 'Please Sign In! (Error from refresh Token)'))
+    next(
+      new ApiError(
+        StatusCodes.FORBIDDEN,
+        'Please Sign In! (Error from refresh Token)'
+      )
+    )
   }
 }
 
@@ -130,8 +132,7 @@ const update = async (req, res, next) => {
     const userId = req.JwtDecoded._id
     const updatedUser = await userService.update(userId, req.body)
     res.status(StatusCodes.OK).json(updatedUser)
-  }
-  catch (error) {
+  } catch (error) {
     next(error)
   }
 }

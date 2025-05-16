@@ -37,14 +37,15 @@ const START_SERVER = () => {
     res.send('Backend comming soon ...')
   })
 
-  if (env.BUILD_MODE === 'production')
-  {
+  if (env.BUILD_MODE === 'production') {
     app.listen(process.env.PORT, () => {
       console.log(`Render server is running at: ${process.env.PORT}`)
     })
   } else {
     app.listen(env.LOCAL_DEV_APP_PORT, env.LOCAL_DEV_APP_HOST, () => {
-      console.log(`I am running at http://${env.LOCAL_DEV_APP_HOST}:${env.LOCAL_DEV_APP_PORT}/`)
+      console.log(
+        `I am running at http://${env.LOCAL_DEV_APP_HOST}:${env.LOCAL_DEV_APP_PORT}/`
+      )
     })
   }
 

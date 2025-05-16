@@ -1,6 +1,6 @@
 import { env } from '~/config/environment'
 
-const exchangeCodeForToken = async (data) => {
+const exchangeCodeForToken = async data => {
   const { authorization_code, codeVerifier } = data
   const params = new URLSearchParams()
   params.append('code', authorization_code)
@@ -12,7 +12,7 @@ const exchangeCodeForToken = async (data) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'secret_key': env.ZALO_APP_SECRET
+      secret_key: env.ZALO_APP_SECRET
     },
     body: params
   })
@@ -29,7 +29,7 @@ const refreshAccessToken = async (refreshToken, appId, secretKey) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'secret_key': secretKey
+      secret_key: secretKey
     },
     body: params
   })
@@ -42,20 +42,27 @@ const refreshAccessToken = async (refreshToken, appId, secretKey) => {
 }
 
 const getUserInfo = async (accessToken, refreshToken, appId, secretKey) => {
-  const fetchUser = async (token) => {
-    const response = await fetch('https://graph.zalo.me/v2.0/me?fields=id,name,picture', {
-      method: 'GET',
-      headers: {
-        'access_token': token
+  const fetchUser = async token => {
+    const response = await fetch(
+      'https://graph.zalo.me/v2.0/me?fields=id,name,picture',
+      {
+        method: 'GET',
+        headers: {
+          access_token: token
+        }
       }
-    })
+    )
     return await response.json()
   }
 
   let data = await fetchUser(accessToken)
 
   if (data.error) {
-    const newAccessToken = await refreshAccessToken(refreshToken, appId, secretKey)
+    const newAccessToken = await refreshAccessToken(
+      refreshToken,
+      appId,
+      secretKey
+    )
     data = await fetchUser(newAccessToken)
   }
 

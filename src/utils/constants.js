@@ -5,4 +5,7 @@ export const WHITELIST_DOMAINS = [
   // Another the domain you want to whitelist
 ]
 
-export const WEBSITE_DOMAIN = (env.BUILD_MODE === 'dev') ? env.WEBSITE_DOMAIN_DEVELOPMENT : env.WEBSITE_DOMAIN_PRODUCTION
+export const WEBSITE_DOMAIN =
+  env.BUILD_MODE === 'dev'
+    ? env.WEBSITE_DOMAIN_DEVELOPMENT
+    : env.WEBSITE_DOMAIN_PRODUCTION

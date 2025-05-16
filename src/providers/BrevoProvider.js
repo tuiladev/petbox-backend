@@ -10,11 +10,12 @@ const sendEmail = async (userEmail, customSubject, customHtmlContent) => {
 
   sendSmtpEmail.subject = customSubject
   sendSmtpEmail.htmlContent = customHtmlContent
-  sendSmtpEmail.sender = { name: env.ADMIN_EMAIL_NAME, email: env.ADMIN_EMAIL_ADDRESS }
+  sendSmtpEmail.sender = {
+    name: env.ADMIN_EMAIL_NAME,
+    email: env.ADMIN_EMAIL_ADDRESS
+  }
 
-  sendSmtpEmail.to = [
-    { email: userEmail }
-  ]
+  sendSmtpEmail.to = [{ email: userEmail }]
 
   return apiInstance.sendTransacEmail(sendSmtpEmail)
 }

@@ -9,14 +9,18 @@ const isAuthorized = async (req, res, next) => {
 
   // Check accessToken
   if (!clientAccessToken) {
-    next(new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized (token not found)'))
+    next(
+      new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized (token not found)')
+    )
     return
   }
 
   try {
     // Verify accessToken
-    const accessTokenDecoded = await JwtProvider.
-      verifyToken(clientAccessToken, env.ACCESS_TOKEN_SECRET_SIGNATURE)
+    const accessTokenDecoded = await JwtProvider.verifyToken(
+      clientAccessToken,
+      env.ACCESS_TOKEN_SECRET_SIGNATURE
+    )
 
     // Set token to user
     req.JwtDecoded = accessTokenDecoded
@@ -24,8 +28,7 @@ const isAuthorized = async (req, res, next) => {
 
     // Route to validation layer
     next()
-  }
-  catch (error) {
+  } catch (error) {
     // Access token is exprired
     if (error?.message?.includes('jwt expired')) {
       next(new ApiError(StatusCodes.GONE, 'Need to refresh token'))

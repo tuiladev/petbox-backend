@@ -9,7 +9,7 @@ import { JwtProvider } from '~/providers/JwtProvider'
 import { GoogleProvider } from '~/providers/GoogleProvider'
 import { ZaloProvider } from '~/providers/ZaloProvider'
 
-const createNew = async (reqBody) => {
+const createNew = async reqBody => {
   try {
     // Check if user_phone already exists
     const existUser = await userModel.findOneByPhone(reqBody.phoneNumber)
@@ -38,17 +38,22 @@ const createNew = async (reqBody) => {
   }
 }
 
-const login = async (reqBody) => {
+const login = async reqBody => {
   try {
     // Query user in Database
     const existUser = await userModel.findOneByPhone(reqBody.phoneNumber)
 
     // Check if user_phoneNumber is not exists
-    if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tồn tại !')
+    if (!existUser)
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tồn tại !')
 
     // Check if password is not correct
-    const isPasswordCorrect = await ArgonProvider.verifyPasswordWithHash(reqBody.password, existUser.password)
-    if (!isPasswordCorrect) throw new ApiError(StatusCodes.UNAUTHORIZED, 'Sai thông tin đăng nhập!')
+    const isPasswordCorrect = await ArgonProvider.verifyPasswordWithHash(
+      reqBody.password,
+      existUser.password
+    )
+    if (!isPasswordCorrect)
+      throw new ApiError(StatusCodes.UNAUTHORIZED, 'Sai thông tin đăng nhập!')
 
     // Create payload data for token
     const userInfo = {
@@ -74,16 +79,17 @@ const login = async (reqBody) => {
       refreshToken,
       ...pickUser(existUser)
     }
-  }
-  catch (error) {
+  } catch (error) {
     throw error
   }
 }
 
-const googleLogin = async (reqBody) => {
+const googleLogin = async reqBody => {
   try {
     // Exchange code for access token
-    const googleAccessToken = await GoogleProvider.exchangeCodeForToken(reqBody.code)
+    const googleAccessToken = await GoogleProvider.exchangeCodeForToken(
+      reqBody.code
+    )
 
     // Get user info from google
     const userData = await GoogleProvider.getUserInfo(googleAccessToken)
@@ -114,21 +120,23 @@ const googleLogin = async (reqBody) => {
       refreshToken,
       ...pickUser(existUser)
     }
-  }
-  catch (error) {
+  } catch (error) {
     throw error
   }
 }
 
-const zaloLogin = async (reqBody) => {
+const zaloLogin = async reqBody => {
   try {
-    const {
-      access_token: zaloAccessToken,
-      refresh_token: zaloRefreshToken
-    } = await ZaloProvider.exchangeCodeForToken(reqBody)
+    const { access_token: zaloAccessToken, refresh_token: zaloRefreshToken } =
+      await ZaloProvider.exchangeCodeForToken(reqBody)
 
     // Get user info from google
-    const userData = await ZaloProvider.getUserInfo(zaloAccessToken, zaloRefreshToken, env.ZALO_APP_ID, env.ZALO_APP_SECRET)
+    const userData = await ZaloProvider.getUserInfo(
+      zaloAccessToken,
+      zaloRefreshToken,
+      env.ZALO_APP_ID,
+      env.ZALO_APP_SECRET
+    )
 
     // Query user in Database
     const existUser = await userModel.findOrCreateByZLId(userData)
@@ -156,13 +164,12 @@ const zaloLogin = async (reqBody) => {
       refreshToken,
       ...pickUser(existUser)
     }
-  }
-  catch (error) {
+  } catch (error) {
     throw error
   }
 }
 
-const refreshToken = async (clientRefreshToken) => {
+const refreshToken = async clientRefreshToken => {
   try {
     // Verify refresh token
     const refreshTokenDecoded = await JwtProvider.verifyToken(
@@ -185,9 +192,7 @@ const refreshToken = async (clientRefreshToken) => {
 
     // Return to controller
     return { accessToken }
-  }
-  catch (error)
-  {
+  } catch (error) {
     throw error
   }
 }
@@ -196,7 +201,8 @@ const update = async (userId, reqBody) => {
   try {
     // Query user in Database
     const existUser = await userModel.findOneById(userId)
-    if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tồn tại !')
+    if (!existUser)
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tồn tại !')
 
     // Init updatedUser
     let updatedUser = {}
@@ -204,11 +210,21 @@ const update = async (userId, reqBody) => {
     // CASE 1: Change password
     if (reqBody.currentPassword && reqBody.newPassword) {
       // Check if current password is correct
-      if (!await ArgonProvider.verifyPasswordWithHash(reqBody.currentPassword, existUser.password))
-        throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Mật khẩu hiện tại không đúng!')
+      if (
+        !(await ArgonProvider.verifyPasswordWithHash(
+          reqBody.currentPassword,
+          existUser.password
+        ))
+      )
+        throw new ApiError(
+          StatusCodes.NOT_ACCEPTABLE,
+          'Mật khẩu hiện tại không đúng!'
+        )
 
       // Hash new password
-      updatedUser = await userModel.update(userId, { password: await ArgonProvider.hashPassword(reqBody.newPassword) })
+      updatedUser = await userModel.update(userId, {
+        password: await ArgonProvider.hashPassword(reqBody.newPassword)
+      })
     }
     // CASE 2: Update other info
     else {
@@ -217,8 +233,7 @@ const update = async (userId, reqBody) => {
 
     // Return to controller
     return pickUser(updatedUser)
-  }
-  catch (error) {
+  } catch (error) {
     throw error
   }
 }

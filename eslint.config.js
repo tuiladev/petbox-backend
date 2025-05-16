@@ -1,9 +1,11 @@
 import js from '@eslint/js'
 import globals from 'globals'
+import eslintPluginPrettier from 'eslint-plugin-prettier'
 
 export default [
   js.configs.recommended,
   {
+    files: ['**/*.js', '**/*.mjs'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -15,6 +17,9 @@ export default [
         ...globals.node,
         ...globals.es2021
       }
+    },
+    plugins: {
+      prettier: eslintPluginPrettier
     },
     rules: {
       // Common
@@ -36,7 +41,16 @@ export default [
       'keyword-spacing': 'warn',
       'comma-dangle': 'warn',
       'comma-spacing': 'warn',
-      'arrow-spacing': 'warn'
+      'arrow-spacing': 'warn',
+
+      // Prettier integration
+      'prettier/prettier': [
+        'error',
+        {
+          // Using .prettierrc config
+          usePrettierrc: true
+        }
+      ]
     }
   }
 ]

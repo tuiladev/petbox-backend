@@ -19,8 +19,7 @@ const exchangeCodeForToken = async code => {
     )
   }
 
-  const data = await response.json()
-  return data.access_token
+  return await response.json()
 }
 
 const getUserInfo = async accessToken => {

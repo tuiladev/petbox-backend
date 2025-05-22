@@ -24,21 +24,30 @@ const USER_COLLECTION_NAME = 'users'
 const USER_COLLECTION_SCHEMA = Joi.object({
   // Use regex to validate ObjectId (because no Object validate in Joi)
   fullName: Joi.string().required().min(5).max(30).trim().strict(),
-  birthDate: Joi.date().default(null),
-  gender: Joi.string().valid('male', 'female', 'other').default(null),
-  email: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
+  birthDate: Joi.date().optional(),
+  gender: Joi.string().valid('male', 'female', 'other').optional(),
+  email: Joi.string()
+    .pattern(EMAIL_RULE)
+    .message(EMAIL_RULE_MESSAGE)
+    .optional(),
   phoneNumber: Joi.string()
     .pattern(PHONE_RULE)
     .message(PHONE_RULE_MESSAGE)
-    .default(null),
+    .optional(),
   password: Joi.string()
     .pattern(PASSWORD_RULE)
     .message(PASSWORD_RULE_MESSAGE)
-    .default(null),
+    .optional(),
 
-  // Social ID
-  googleID: Joi.string().default(null),
-  zaloID: Joi.string().default(null),
+  // Unified social login IDs
+  socialIds: Joi.array()
+    .items(
+      Joi.object({
+        provider: Joi.string().valid('google', 'zalo').required(),
+        id: Joi.string().required()
+      })
+    )
+    .default([]),
 
   avatar: Joi.string().default(null),
   role: Joi.string()
@@ -47,7 +56,7 @@ const USER_COLLECTION_SCHEMA = Joi.object({
 
   petIds: Joi.array()
     .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
-    .default(null),
+    .optional(),
 
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').default(null),
@@ -93,55 +102,26 @@ const findOneByPhone = async phoneNumber => {
   }
 }
 
-const findOrCreateByGGId = async userData => {
+const findOrCreateBySocial = async (provider, userData) => {
   try {
-    // Find user by googleID
+    const socialId = provider === 'google' ? userData.sub : userData.id
+
+    // Find user by social ID
     let user = await GET_DB()
       .collection(USER_COLLECTION_NAME)
-      .findOne({ googleID: userData.sub })
-    if (user) {
-      return user
-    }
+      .findOne({
+        socialIds: { $elemMatch: { provider, id: socialId } }
+      })
+    if (user) return user
 
     // Create new user if not found
-    const newUserData = {
+    const newUser = {
       fullName: userData.name,
-      email: userData.email,
-      googleID: userData.sub,
-      avatar: userData.picture
+      email: userData.email || '',
+      socialIds: [{ provider, id: socialId }],
+      avatar: userData.picture || userData.avatar
     }
-
-    // Create new user
-    const result = await createNew(newUserData)
-
-    // Return to service
-    return await GET_DB()
-      .collection(USER_COLLECTION_NAME)
-      .findOne({ _id: result.insertedId })
-  } catch (error) {
-    throw new Error(error)
-  }
-}
-
-const findOrCreateByZLId = async userData => {
-  try {
-    // Find user by zaloID
-    let user = await GET_DB()
-      .collection(USER_COLLECTION_NAME)
-      .findOne({ zaloID: userData.id })
-    if (user) {
-      return user
-    }
-
-    // Create new user if not found
-    const newUserData = {
-      fullName: userData.name,
-      zaloID: userData.id,
-      avatar: userData.avatar
-    }
-
-    // Create new user
-    const result = await createNew(newUserData)
+    const result = await createNew(newUser)
 
     // Return to service
     return await GET_DB()
@@ -180,7 +160,6 @@ export const userModel = {
   createNew,
   findOneById,
   findOneByPhone,
-  findOrCreateByGGId,
-  findOrCreateByZLId,
+  findOrCreateBySocial,
   update
 }

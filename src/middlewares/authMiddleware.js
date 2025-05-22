@@ -22,11 +22,8 @@ const isAuthorized = async (req, res, next) => {
       env.ACCESS_TOKEN_SECRET_SIGNATURE
     )
 
-    // Set token to user
-    req.JwtDecoded = accessTokenDecoded
-    console.log('accessTokenDecoded', accessTokenDecoded)
-
-    // Route to validation layer
+    // Return phoneNumber for searching...
+    req.phoneNumber = accessTokenDecoded.phoneNumber
     next()
   } catch (error) {
     // Access token is exprired
@@ -40,6 +37,29 @@ const isAuthorized = async (req, res, next) => {
   }
 }
 
+const isVerifyOTP = async (req, res, next) => {
+  try {
+    const verifyToken = req.cookies?.verifyToken
+    if (!verifyToken)
+      throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Vui lòng xác thực OTP')
+
+    const decoded = await JwtProvider.verifyToken(
+      verifyToken,
+      env.VERIFY_TOKEN_SECRET_SIGNATURE
+    )
+    req.phoneNumber = decoded.phoneNumber
+    next()
+  } catch (error) {
+    next(
+      new ApiError(
+        StatusCodes.NOT_ACCEPTABLE,
+        'Phiên xác thực đã hết hạn, vui lòng thực hiện lại'
+      )
+    )
+  }
+}
+
 export const authMiddleware = {
-  isAuthorized
+  isAuthorized,
+  isVerifyOTP
 }

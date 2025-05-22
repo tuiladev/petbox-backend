@@ -41,7 +41,7 @@ const refreshAccessToken = async (refreshToken, appId, secretKey) => {
   return data.access_token
 }
 
-const getUserInfo = async (accessToken, refreshToken, appId, secretKey) => {
+const getUserInfo = async (accessToken, refreshToken) => {
   const fetchUser = async token => {
     const response = await fetch(
       'https://graph.zalo.me/v2.0/me?fields=id,name,picture',
@@ -60,8 +60,8 @@ const getUserInfo = async (accessToken, refreshToken, appId, secretKey) => {
   if (data.error) {
     const newAccessToken = await refreshAccessToken(
       refreshToken,
-      appId,
-      secretKey
+      env.ZALO_APP_ID,
+      env.ZALO_APP_SECRET
     )
     data = await fetchUser(newAccessToken)
   }

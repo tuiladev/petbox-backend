@@ -1,248 +1,199 @@
-/* eslint-disable no-useless-catch */
+/* eslint-disable indent */
+import ms from 'ms'
 import { env } from '~/config/environment'
-import { StatusCodes } from 'http-status-codes'
-import { userModel } from '~/models/userModel'
 import ApiError from '~/utils/ApiError'
 import { pickUser } from '~/utils/formatters'
+import { StatusCodes } from 'http-status-codes'
+import { userModel } from '~/models/userModel'
 import { ArgonProvider } from '~/providers/ArgonProvider'
 import { JwtProvider } from '~/providers/JwtProvider'
 import { GoogleProvider } from '~/providers/GoogleProvider'
 import { ZaloProvider } from '~/providers/ZaloProvider'
+import { TwilioProvider } from '~/providers/TwilioProvider'
+import { RedisProvider } from '~/providers/RedisProvider'
 
-const createNew = async reqBody => {
-  try {
-    // Check if user_phone already exists
-    const existUser = await userModel.findOneByPhone(reqBody.phoneNumber)
-    if (existUser) {
-      throw new ApiError(StatusCodes.CONFLICT, 'Số điện thoại đã tồn tại!')
-    }
+const generateTokens = async userInfo => ({
+  accessToken: await JwtProvider.generateToken(
+    userInfo,
+    env.ACCESS_TOKEN_SECRET_SIGNATURE,
+    env.ACCESS_TOKEN_LIFE
+  ),
+  refreshToken: await JwtProvider.generateToken(
+    userInfo,
+    env.REFRESH_TOKEN_SECRET_SIGNATURE,
+    env.REFRESH_TOKEN_LIFE
+  )
+})
 
-    // Create data to store
-    const newUser = {
-      fullName: reqBody.fullName,
-      email: reqBody.email,
-      phoneNumber: reqBody.phoneNumber,
-      birthDate: reqBody.birthDate,
-      gender: reqBody.gender,
-      password: await ArgonProvider.hashPassword(reqBody.password)
-    }
+const createNew = async data => {
+  const exists = await userModel.findOneByPhone(data.phoneNumber)
+  if (exists) throw new ApiError(StatusCodes.CONFLICT, 'Phone already exists')
 
-    // Store data to database
-    const createdUser = await userModel.createNew(newUser)
-    const getNewUser = await userModel.findOneById(createdUser.insertedId)
-
-    // Return result to controller
-    return pickUser(getNewUser)
-  } catch (error) {
-    throw error
-  }
+  data.password = await ArgonProvider.hashPassword(data.password)
+  const { insertedId } = await userModel.createNew(data)
+  const user = await userModel.findOneById(insertedId)
+  return pickUser(user)
 }
 
-const login = async reqBody => {
-  try {
-    // Query user in Database
-    const existUser = await userModel.findOneByPhone(reqBody.phoneNumber)
+const login = async ({ phoneNumber, password }) => {
+  const user = await userModel.findOneByPhone(phoneNumber)
+  if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
+  const valid = await ArgonProvider.verifyPasswordWithHash(
+    password,
+    user.password
+  )
+  if (!valid)
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid credentials')
 
-    // Check if user_phoneNumber is not exists
-    if (!existUser)
-      throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tồn tại !')
-
-    // Check if password is not correct
-    const isPasswordCorrect = await ArgonProvider.verifyPasswordWithHash(
-      reqBody.password,
-      existUser.password
-    )
-    if (!isPasswordCorrect)
-      throw new ApiError(StatusCodes.UNAUTHORIZED, 'Sai thông tin đăng nhập!')
-
-    // Create payload data for token
-    const userInfo = {
-      _id: existUser._id,
-      phoneNumber: existUser.phoneNumber
-    }
-
-    // Create 2 type of token: access token and refresh token
-    const accessToken = await JwtProvider.generateToken(
-      userInfo,
-      env.ACCESS_TOKEN_SECRET_SIGNATURE,
-      env.ACCESS_TOKEN_LIFE
-    )
-    const refreshToken = await JwtProvider.generateToken(
-      userInfo,
-      env.REFRESH_TOKEN_SECRET_SIGNATURE,
-      env.REFRESH_TOKEN_LIFE
-    )
-
-    // Return info to controller
-    return {
-      accessToken,
-      refreshToken,
-      ...pickUser(existUser)
-    }
-  } catch (error) {
-    throw error
-  }
+  const payload = { _id: user._id, phoneNumber: user.phoneNumber }
+  const tokens = await generateTokens(payload)
+  return { ...tokens, ...pickUser(user) }
 }
 
-const googleLogin = async reqBody => {
-  try {
-    // Exchange code for access token
-    const googleAccessToken = await GoogleProvider.exchangeCodeForToken(
-      reqBody.code
-    )
+const socialLogin = async ({ provider, code, ...rest }) => {
+  // Exchange code for tokens
+  const tokenData =
+    provider === 'google'
+      ? await GoogleProvider.exchangeCodeForToken(code)
+      : await ZaloProvider.exchangeCodeForToken(rest)
 
-    // Get user info from google
-    const userData = await GoogleProvider.getUserInfo(googleAccessToken)
-
-    // Query user in Database
-    const existUser = await userModel.findOrCreateByGGId(userData)
-
-    // Create payload data for token
-    const userInfo = {
-      _id: existUser._id
-    }
-
-    // Create 2 type of token: access token and refresh token
-    const accessToken = await JwtProvider.generateToken(
-      userInfo,
-      env.ACCESS_TOKEN_SECRET_SIGNATURE,
-      env.ACCESS_TOKEN_LIFE
-    )
-    const refreshToken = await JwtProvider.generateToken(
-      userInfo,
-      env.REFRESH_TOKEN_SECRET_SIGNATURE,
-      env.REFRESH_TOKEN_LIFE
-    )
-
-    // Return info to controller
-    return {
-      accessToken,
-      refreshToken,
-      ...pickUser(existUser)
-    }
-  } catch (error) {
-    throw error
-  }
-}
-
-const zaloLogin = async reqBody => {
-  try {
-    const { access_token: zaloAccessToken, refresh_token: zaloRefreshToken } =
-      await ZaloProvider.exchangeCodeForToken(reqBody)
-
-    // Get user info from google
-    const userData = await ZaloProvider.getUserInfo(
-      zaloAccessToken,
-      zaloRefreshToken,
-      env.ZALO_APP_ID,
-      env.ZALO_APP_SECRET
-    )
-
-    // Query user in Database
-    const existUser = await userModel.findOrCreateByZLId(userData)
-
-    // Create payload data for token
-    const userInfo = {
-      _id: existUser._id
-    }
-
-    // Create 2 type of token: access token and refresh token
-    const accessToken = await JwtProvider.generateToken(
-      userInfo,
-      env.ACCESS_TOKEN_SECRET_SIGNATURE,
-      env.ACCESS_TOKEN_LIFE
-    )
-    const refreshToken = await JwtProvider.generateToken(
-      userInfo,
-      env.REFRESH_TOKEN_SECRET_SIGNATURE,
-      env.REFRESH_TOKEN_LIFE
-    )
-
-    // Return info to controller
-    return {
-      accessToken,
-      refreshToken,
-      ...pickUser(existUser)
-    }
-  } catch (error) {
-    throw error
-  }
-}
-
-const refreshToken = async clientRefreshToken => {
-  try {
-    // Verify refresh token
-    const refreshTokenDecoded = await JwtProvider.verifyToken(
-      clientRefreshToken,
-      env.REFRESH_TOKEN_SECRET_SIGNATURE
-    )
-
-    // Create payload data for token
-    const userInfo = {
-      _id: refreshTokenDecoded._id,
-      email: refreshTokenDecoded.email
-    }
-
-    // Create new accessToken
-    const accessToken = await JwtProvider.generateToken(
-      userInfo,
-      env.ACCESS_TOKEN_SECRET_SIGNATURE,
-      env.ACCESS_TOKEN_LIFE
-    )
-
-    // Return to controller
-    return { accessToken }
-  } catch (error) {
-    throw error
-  }
-}
-
-const update = async (userId, reqBody) => {
-  try {
-    // Query user in Database
-    const existUser = await userModel.findOneById(userId)
-    if (!existUser)
-      throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tồn tại !')
-
-    // Init updatedUser
-    let updatedUser = {}
-
-    // CASE 1: Change password
-    if (reqBody.currentPassword && reqBody.newPassword) {
-      // Check if current password is correct
-      if (
-        !(await ArgonProvider.verifyPasswordWithHash(
-          reqBody.currentPassword,
-          existUser.password
-        ))
-      )
-        throw new ApiError(
-          StatusCodes.NOT_ACCEPTABLE,
-          'Mật khẩu hiện tại không đúng!'
+  // Get user info
+  const userData =
+    provider === 'google'
+      ? await GoogleProvider.getUserInfo(tokenData.access_token)
+      : await ZaloProvider.getUserInfo(
+          tokenData.access_token,
+          tokenData.refresh_token
         )
 
-      // Hash new password
-      updatedUser = await userModel.update(userId, {
-        password: await ArgonProvider.hashPassword(reqBody.newPassword)
-      })
-    }
-    // CASE 2: Update other info
-    else {
-      updatedUser = await userModel.update(userId, reqBody)
-    }
+  const user = await userModel.findOrCreateBySocial(provider, userData)
+  const payload = { _id: user._id }
+  const tokens = await generateTokens(payload)
+  return { ...tokens, ...pickUser(user) }
+}
 
-    // Return to controller
-    return pickUser(updatedUser)
-  } catch (error) {
-    throw error
+const refreshToken = async refreshToken => {
+  const decoded = await JwtProvider.verifyToken(
+    refreshToken,
+    env.REFRESH_TOKEN_SECRET_SIGNATURE
+  )
+  const tokens = await generateTokens({
+    _id: decoded._id,
+    phoneNumber: decoded.phoneNumber
+  })
+  return tokens
+}
+
+const update = async (phoneNumber, data) => {
+  const user = await userModel.findOneByPhone(phoneNumber)
+  const userId = user._id
+  if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
+
+  let updated
+  // Check if user change password
+  if (data.currentPassword && data.newPassword) {
+    const same = await ArgonProvider.verifyPasswordWithHash(
+      data.currentPassword,
+      user.password
+    )
+    if (!same)
+      throw new ApiError(
+        StatusCodes.NOT_ACCEPTABLE,
+        'Incorrect current password'
+      )
   }
+
+  // Update password (in 2 cases: change OR reset password)
+  if (data.newPassword) {
+    updated = await userModel.update(userId, {
+      password: await ArgonProvider.hashPassword(data.newPassword)
+    })
+  } else {
+    // Update normal info
+    updated = await userModel.update(userId, data)
+  }
+
+  return pickUser(updated)
+}
+
+const requestOtp = async ({ phoneNumber, actionType }) => {
+  // 1. Check number of request in 10 minutes
+  const key10min = `otp_counter:${phoneNumber}`
+  const count10min = await RedisProvider.get(key10min)
+  if (count10min >= env.REDIS_MAX_PER_10MIN) {
+    throw new ApiError(
+      StatusCodes.TOO_MANY_REQUESTS,
+      'Bạn đã gửi quá số lần OTP trong 10 phút, vui lòng thử lại sau 10 phút!'
+    )
+  }
+
+  // 2. Check counter 24h
+  const keyDay = `otp_daily_counter:${phoneNumber}`
+  const countDay = await RedisProvider.get(keyDay)
+  if (countDay >= env.REDIS_MAX_PER_DAY) {
+    throw new ApiError(
+      StatusCodes.TOO_MANY_REQUESTS,
+      'Bạn đã gửi quá số lần OTP trong ngày, vui lòng thử lại vào ngày mai!'
+    )
+  }
+
+  // 3. Update counter
+  const newCount10min = await RedisProvider.incr(key10min)
+  if (newCount10min === 1)
+    await RedisProvider.expire(key10min, ms(env.REDIS_WINDOW_10MIN) / 1000)
+  const newCountDay = await RedisProvider.incr(keyDay)
+  if (newCountDay === 1)
+    await RedisProvider.expire(keyDay, ms(env.REDIS_WINDOW_1DAY) / 1000)
+
+  // 4. Process if valid
+  const user = await userModel.findOneByPhone(phoneNumber)
+
+  if (actionType === 'register') {
+    if (user)
+      throw new ApiError(StatusCodes.CONFLICT, 'Số điện thoại đã đăng ký!')
+    await TwilioProvider.sendVerification(phoneNumber)
+    return { counter: count10min + 1 }
+  }
+
+  if (actionType === 'reset-password') {
+    if (!user)
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tồn tại!')
+    await TwilioProvider.sendVerification(phoneNumber)
+    return { counter: count10min + 1 }
+  }
+
+  throw new ApiError(StatusCodes.BAD_REQUEST, 'Yêu cầu không hợp lệ!')
+}
+
+const verifyOtp = async ({ phoneNumber, code }) => {
+  const result = await TwilioProvider.checkVerification(phoneNumber, code)
+  if (result.status === 'pending') {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'OTP không hợp lệ')
+  }
+  if (result.status === 'expired') {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'OTP đã hết hạn, vui lòng yêu cầu mã mới'
+    )
+  }
+  if (result.status === 'approved') {
+    const payload = { phoneNumber }
+    return await JwtProvider.generateToken(
+      payload,
+      env.VERIFY_TOKEN_SECRET_SIGNATURE,
+      env.VERIFY_TOKEN_LIFE
+    )
+  }
+
+  throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Lỗi không mong muốn!')
 }
 
 export const userService = {
   createNew,
   login,
-  googleLogin,
-  zaloLogin,
+  socialLogin,
   refreshToken,
-  update
+  update,
+  requestOtp,
+  verifyOtp
 }

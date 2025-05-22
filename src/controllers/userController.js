@@ -1,148 +1,114 @@
 import ms from 'ms'
-import { StatusCodes } from 'http-status-codes'
-import { env } from '~/config/environment'
-import { userService } from '~/services/userService'
 import ApiError from '~/utils/ApiError'
+import { env } from '~/config/environment'
+import { StatusCodes } from 'http-status-codes'
+import { userService } from '~/services/userService'
+
+const setAuthCookies = (res, { accessToken, refreshToken }) => {
+  const commonOpts = { httpOnly: true, secure: true, sameSite: 'none' }
+  res.cookie('accessToken', accessToken, {
+    ...commonOpts,
+    maxAge: ms(env.ACCESS_TOKEN_LIFE) + ms(env.BUFFER_TIME)
+  })
+  res.cookie('refreshToken', refreshToken, {
+    ...commonOpts,
+    maxAge: ms(env.REFRESH_TOKEN_LIFE) + ms(env.BUFFER_TIME)
+  })
+}
 
 const createNew = async (req, res, next) => {
   try {
-    const createdUser = await userService.createNew(req.body)
-    res.status(StatusCodes.CREATED).json(createdUser)
-  } catch (error) {
-    next(error)
+    const user = await userService.createNew(req.body)
+    res.clearCookie('verifyToken')
+    res.status(StatusCodes.CREATED).json(user)
+  } catch (err) {
+    next(err)
   }
 }
 
 const login = async (req, res, next) => {
   try {
     const result = await userService.login(req.body)
-
-    // Return Http only cookies to client
-    res.cookie('accessToken', result.accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: ms(env.ACCESS_TOKEN_LIFE + env.BUFFER_TIME)
-    })
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: ms(env.REFRESH_TOKEN_LIFE + env.BUFFER_TIME)
-    })
-
-    // Remove token from res.body
-    const { accessToken, refreshToken, ...userInfo } = result
-    res.status(StatusCodes.OK).json(userInfo)
-  } catch (error) {
-    next(error)
+    setAuthCookies(res, result)
+    const { accessToken, refreshToken, ...payload } = result
+    res.status(StatusCodes.OK).json(payload)
+  } catch (err) {
+    next(err)
   }
 }
 
-const googleLogin = async (req, res, next) => {
+const socialLogin = async (req, res, next) => {
   try {
-    const result = await userService.googleLogin(req.body)
-
-    // Return Http only cookies to client
-    res.cookie('accessToken', result.accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: ms(env.ACCESS_TOKEN_LIFE + env.BUFFER_TIME)
-    })
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: ms(env.REFRESH_TOKEN_LIFE + env.BUFFER_TIME)
-    })
-
-    // Remove token from res.body
-    const { accessToken, refreshToken, ...userInfo } = result
-    res.status(StatusCodes.OK).json(userInfo)
-  } catch (error) {
-    next(error)
+    const result = await userService.socialLogin(req.body)
+    setAuthCookies(res, result)
+    const { accessToken, refreshToken, ...payload } = result
+    res.status(StatusCodes.OK).json(payload)
+  } catch (err) {
+    next(err)
   }
 }
 
-const zaloLogin = async (req, res, next) => {
+const logout = (req, res, next) => {
   try {
-    const result = await userService.zaloLogin(req.body)
-
-    // Return Http only cookies to client
-    res.cookie('accessToken', result.accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: ms(env.ACCESS_TOKEN_LIFE + env.BUFFER_TIME)
-    })
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: ms(env.REFRESH_TOKEN_LIFE + env.BUFFER_TIME)
-    })
-
-    // Remove token from res.body
-    const { accessToken, refreshToken, ...userInfo } = result
-    res.status(StatusCodes.OK).json(userInfo)
-  } catch (error) {
-    next(error)
-  }
-}
-
-const logout = async (req, res, next) => {
-  try {
-    // Clear cookies
     res.clearCookie('accessToken')
     res.clearCookie('refreshToken')
-    // Return loggedOut: true to client
     res.status(StatusCodes.OK).json({ loggedOut: true })
-  } catch (error) {
-    next(error)
+  } catch (err) {
+    next(err)
   }
 }
 
 const refreshToken = async (req, res, next) => {
   try {
-    // Call serviec to generate new access token
-    const result = await userService.refreshToken(req.cookies?.refreshToken)
-
-    // Return new Http only cookies to client
-    res.cookie('accessToken', result.accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: ms(env.ACCESS_TOKEN_LIFE) + env.BUFFER_TIME
-    })
-
-    res.status(StatusCodes.OK).json(result)
-  } catch (error) {
-    next(
-      new ApiError(
-        StatusCodes.FORBIDDEN,
-        'Please Sign In! (Error from refresh Token)'
-      )
-    )
+    const tokens = await userService.refreshToken(req.cookies.refreshToken)
+    setAuthCookies(res, tokens)
+    res.status(StatusCodes.OK).json(tokens)
+  } catch (err) {
+    next(new ApiError(StatusCodes.FORBIDDEN, 'Please sign in'))
   }
 }
 
 const update = async (req, res, next) => {
   try {
-    const userId = req.JwtDecoded._id
-    const updatedUser = await userService.update(userId, req.body)
+    const updatedUser = await userService.update(req.phoneNumber, req.body)
+    res.clearCookie('verifyToken')
     res.status(StatusCodes.OK).json(updatedUser)
-  } catch (error) {
-    next(error)
+  } catch (err) {
+    next(err)
+  }
+}
+
+const requestOtp = async (req, res, next) => {
+  try {
+    const result = await userService.requestOtp(req.body)
+    return res.status(StatusCodes.OK).json(result)
+  } catch (err) {
+    return next(err)
+  }
+}
+
+const verifyOtp = async (req, res, next) => {
+  try {
+    const verify_token = await userService.verifyOtp(req.body)
+    res.cookie('verifyToken', verify_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: ms(env.VERIFY_TOKEN_LIFE)
+    })
+    return res.status(StatusCodes.OK).json({ verified: true })
+  } catch (err) {
+    return next(err)
   }
 }
 
 export const userController = {
   createNew,
   login,
-  googleLogin,
-  zaloLogin,
+  socialLogin,
   logout,
   refreshToken,
-  update
+  update,
+  requestOtp,
+  verifyOtp
 }

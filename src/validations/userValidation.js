@@ -11,6 +11,7 @@ import {
 } from '~/utils/validator'
 
 const createNew = async (req, res, next) => {
+  if (req.phoneNumber) req.body.phoneNumber = req.phoneNumber
   const correctCondition = Joi.object({
     fullName: Joi.string().required().min(5).max(30).trim().strict(),
     birthDate: Joi.date().required(),
@@ -64,7 +65,7 @@ const login = async (req, res, next) => {
     password: Joi.string()
       .required()
       .pattern(PASSWORD_RULE)
-      .message('Sai thông tin đăng nhập!')
+      .message('Thông tin không hợp lệ!')
   })
 
   try {
@@ -77,24 +78,15 @@ const login = async (req, res, next) => {
   }
 }
 
-const googleLogin = async (req, res, next) => {
-  const { code } = req.body
-  if (!code) {
+const socialLogin = async (req, res, next) => {
+  const { provider, code, ...rest } = req.body
+  if (!code || !rest) {
     next(
-      new ApiError(StatusCodes.BAD_REQUEST, 'Không tìm thấy mã code từ Google!')
+      new ApiError(StatusCodes.BAD_REQUEST, 'Không tìm thấy mã exchange code')
     )
   } else {
     next()
   }
-}
-
-const zaloLogin = async (req, res, next) => {
-  console.log('This is userValidation, req.body: ', req.body)
-  const { authorization_code } = req.body
-  if (!authorization_code) {
-    return res.status(400).json({ message: 'Không tìm thấy code từ Zalo!' })
-  }
-  next()
 }
 
 const update = async (req, res, next) => {
@@ -102,7 +94,7 @@ const update = async (req, res, next) => {
     fullName: Joi.string().min(5).max(30).trim(),
     email: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
     phoneNumber: Joi.string().pattern(PHONE_RULE).message(PHONE_RULE_MESSAGE),
-    currentPassword: Joi.string()
+    password: Joi.string()
       .pattern(PASSWORD_RULE)
       .message(`Mật khẩu cũ: ${PASSWORD_RULE_MESSAGE}`),
     newPassword: Joi.string()
@@ -124,7 +116,6 @@ export const userValidation = {
   createNew,
   verifyAccount,
   login,
-  googleLogin,
-  zaloLogin,
+  socialLogin,
   update
 }

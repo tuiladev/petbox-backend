@@ -78,17 +78,21 @@ const login = async (req, res, next) => {
   }
 }
 
-const socialLogin = (req, res, next) => {
+export const socialLogin = (req, res, next) => {
   const { provider, code, authorization_code, codeVerifier } = req.body
-  console.log(req.body)
-  console.log(
-    !(provider === 'google' ? code : authorization_code) || !codeVerifier
-  )
-  if (!(provider === 'google' ? code : authorization_code) || !codeVerifier) {
+
+  if (provider !== 'google' && provider !== 'zalo') {
+    return next(new ApiError(StatusCodes.BAD_REQUEST, 'Provider không hỗ trợ'))
+  }
+
+  if (
+    (provider === 'google' && !code) ||
+    (provider === 'zalo' && (!authorization_code || !codeVerifier))
+  ) {
     return next(
       new ApiError(
         StatusCodes.BAD_REQUEST,
-        'Thiếu mã exchange code hoặc codeVerifier'
+        'Thiếu hoặc sai thông tin xác thực cho social login'
       )
     )
   }

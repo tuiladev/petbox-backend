@@ -80,6 +80,10 @@ const login = async (req, res, next) => {
 
 const socialLogin = (req, res, next) => {
   const { provider, code, authorization_code, codeVerifier } = req.body
+  console.log(req.body)
+  console.log(
+    !(provider === 'google' ? code : authorization_code) || !codeVerifier
+  )
   if (!(provider === 'google' ? code : authorization_code) || !codeVerifier) {
     return next(
       new ApiError(

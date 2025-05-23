@@ -24,20 +24,20 @@ const USER_COLLECTION_NAME = 'users'
 const USER_COLLECTION_SCHEMA = Joi.object({
   // Use regex to validate ObjectId (because no Object validate in Joi)
   fullName: Joi.string().required().min(5).max(30).trim().strict(),
-  birthDate: Joi.date().optional(),
-  gender: Joi.string().valid('male', 'female', 'other').optional(),
+  birthDate: Joi.date().default(null),
+  gender: Joi.string().valid('male', 'female', 'other').default(null),
   email: Joi.string()
     .pattern(EMAIL_RULE)
     .message(EMAIL_RULE_MESSAGE)
-    .optional(),
+    .default(null),
   phoneNumber: Joi.string()
     .pattern(PHONE_RULE)
     .message(PHONE_RULE_MESSAGE)
-    .optional(),
+    .default(null),
   password: Joi.string()
     .pattern(PASSWORD_RULE)
     .message(PASSWORD_RULE_MESSAGE)
-    .optional(),
+    .default(null),
 
   // Unified social login IDs
   socialIds: Joi.array()
@@ -56,7 +56,7 @@ const USER_COLLECTION_SCHEMA = Joi.object({
 
   petIds: Joi.array()
     .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
-    .optional(),
+    .default([]),
 
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').default(null),

@@ -2,6 +2,12 @@ import { env } from '~/config/environment'
 
 const exchangeCodeForToken = async code => {
   console.log('CODE: ', code)
+  console.log('Env GOOGLE_CLIENT_ID:', env.GOOGLE_CLIENT_ID)
+  if (!env.GOOGLE_CLIENT_ID) {
+    throw new Error(
+      'Missing GOOGLE_CLIENT_ID from environment. Hãy kiểm tra .env và config.'
+    )
+  }
   const params = new URLSearchParams()
   params.append('code', code)
   params.append('client_id', env.GOOGLE_CLIENT_ID)

@@ -78,15 +78,17 @@ const login = async (req, res, next) => {
   }
 }
 
-const socialLogin = async (req, res, next) => {
+const socialLogin = (req, res, next) => {
   const { provider, code, authorization_code, codeVerifier } = req.body
-  if (!code || !authorization_code || !codeVerifier) {
-    next(
-      new ApiError(StatusCodes.BAD_REQUEST, 'Không tìm thấy mã exchange code')
+  if (!(provider === 'google' ? code : authorization_code) || !codeVerifier) {
+    return next(
+      new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'Thiếu mã exchange code hoặc codeVerifier'
+      )
     )
-  } else {
-    next()
   }
+  next()
 }
 
 const update = async (req, res, next) => {

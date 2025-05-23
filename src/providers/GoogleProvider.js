@@ -2,28 +2,29 @@ import { env } from '~/config/environment'
 
 const exchangeCodeForToken = async code => {
   console.log('CODE: ', code)
+  const params = new URLSearchParams()
+  params.append('code', code)
+  params.append('client_id', env.GOOGLE_CLIENT_ID)
+  params.append('client_secret', env.GOOGLE_CLIENT_SECRET)
+  params.append('redirect_uri', env.GOOGLE_REDIRECT_URI)
+  params.append('grant_type', 'authorization_code')
+
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      code,
-      client_id: env.GOOGLE_CLIENT_ID,
-      client_secret: env.GOOGLE_CLIENT_SECRET,
-      redirect_uri: env.GOOGLE_REDIRECT_URI,
-      grant_type: 'authorization_code'
-    })
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString()
   })
 
+  const data = await response.json()
   if (!response.ok) {
-    console.log('RESPONSE: ', response)
+    console.error('Error exchanging code:', data)
     throw new Error(
-      `Lỗi khi trao đổi code: ${response.status} ${response.statusText}`
+      `Lỗi khi trao đổi code: ${data.error} - ${data.error_description}`
     )
   }
 
-  const result = await response.json()
-  console.log('RESULT: ', result)
-  return result
+  console.log('RESULT: ', data)
+  return data
 }
 
 const getUserInfo = async accessToken => {
@@ -37,11 +38,11 @@ const getUserInfo = async accessToken => {
 
   if (!response.ok) {
     const errText = await response.text()
+    console.error('Error fetching user info:', errText)
     throw new Error(`Lỗi lấy thông tin user: ${response.status} - ${errText}`)
   }
 
-  const data = await response.json()
-  return data
+  return await response.json()
 }
 
 export const GoogleProvider = {

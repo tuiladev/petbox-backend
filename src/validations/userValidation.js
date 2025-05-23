@@ -79,8 +79,8 @@ const login = async (req, res, next) => {
 }
 
 const socialLogin = async (req, res, next) => {
-  const { provider, code, ...rest } = req.body
-  if (!code || !rest) {
+  const { provider, code, authorization_code, codeVerifier } = req.body
+  if (!code || !authorization_code || !codeVerifier) {
     next(
       new ApiError(StatusCodes.BAD_REQUEST, 'Không tìm thấy mã exchange code')
     )

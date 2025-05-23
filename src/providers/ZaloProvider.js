@@ -1,7 +1,6 @@
 import { env } from '~/config/environment'
 
-const exchangeCodeForToken = async data => {
-  const { authorization_code, codeVerifier } = data
+const exchangeCodeForToken = async ({ authorization_code, codeVerifier }) => {
   const params = new URLSearchParams()
   params.append('code', authorization_code)
   params.append('app_id', env.ZALO_APP_ID)

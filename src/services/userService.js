@@ -50,12 +50,20 @@ const login = async ({ phoneNumber, password }) => {
   return { ...tokens, ...pickUser(user) }
 }
 
-const socialLogin = async ({ provider, code, ...rest }) => {
+const socialLogin = async ({
+  provider,
+  code,
+  authorization_code,
+  codeVerifier
+}) => {
   // Exchange code for tokens
   const tokenData =
     provider === 'google'
       ? await GoogleProvider.exchangeCodeForToken(code)
-      : await ZaloProvider.exchangeCodeForToken(rest)
+      : await ZaloProvider.exchangeCodeForToken({
+          authorization_code,
+          codeVerifier
+        })
 
   // Get user info
   const userData =

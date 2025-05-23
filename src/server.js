@@ -1,13 +1,15 @@
 /* eslint-disable no-console */
 import express from 'express'
 import cors from 'cors'
-import { corsOptions } from './config/cors'
+import { corsOptions } from './config/cors.js'
 import AsyncExitHook from 'async-exit-hook'
 import { env } from '~/config/environment'
 import { CONNECT_DB, CLOSE_DB } from '~/config/mongodb'
+import cookieParser from 'cookie-parser'
+
+// Routes
 import { APIs_V1 } from '~/routes/v1'
 import { errorHandlingMiddleware } from '~/middlewares/errorHandlingMiddleware'
-import cookieParser from 'cookie-parser'
 
 const START_SERVER = () => {
   const app = express()
@@ -18,38 +20,41 @@ const START_SERVER = () => {
     next()
   })
 
-  // Use cookie-parser
+  // Cookie parser
   app.use(cookieParser())
 
-  // Cross-Origin Resource Sharing (CORS)
+  // CORS
   app.use(cors(corsOptions))
 
-  // Enable req.body json data
+  // JSON body
   app.use(express.json())
 
-  // Use APIs V1
+  // API v1 routes
   app.use('/v1', APIs_V1)
 
-  // Middleware error handler
+  // Error handler
   app.use(errorHandlingMiddleware)
 
+  // Health check
   app.get('/', (req, res) => {
-    res.send('Backend comming soon ...')
+    res.send('Backend coming soon ...')
   })
 
+  const port =
+    env.BUILD_MODE === 'production' ? process.env.PORT : env.LOCAL_DEV_APP_PORT
+  const host = env.LOCAL_DEV_APP_HOST
+
   if (env.BUILD_MODE === 'production') {
-    app.listen(process.env.PORT, () => {
-      console.log(`Render server is running at: ${process.env.PORT}`)
+    app.listen(port, () => {
+      console.log(`Render server is running at: ${port}`)
     })
   } else {
-    app.listen(env.LOCAL_DEV_APP_PORT, env.LOCAL_DEV_APP_HOST, () => {
-      console.log(
-        `I am running at http://${env.LOCAL_DEV_APP_HOST}:${env.LOCAL_DEV_APP_PORT}/`
-      )
+    app.listen(port, host, () => {
+      console.log(`I am running at http://${host}:${port}/`)
     })
   }
 
-  // Cleanup trước khi server bị đóng
+  // Cleanup before exit
   AsyncExitHook(() => {
     CLOSE_DB()
   })

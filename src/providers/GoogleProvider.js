@@ -1,6 +1,7 @@
 import { env } from '~/config/environment'
 
 const exchangeCodeForToken = async code => {
+  console.log('CODE: ', code)
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -14,12 +15,15 @@ const exchangeCodeForToken = async code => {
   })
 
   if (!response.ok) {
+    console.log('RESPONSE: ', response)
     throw new Error(
       `Lỗi khi trao đổi code: ${response.status} ${response.statusText}`
     )
   }
 
-  return await response.json()
+  const result = await response.json()
+  console.log('RESULT: ', result)
+  return result
 }
 
 const getUserInfo = async accessToken => {

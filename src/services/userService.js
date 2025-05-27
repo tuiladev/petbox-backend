@@ -125,9 +125,22 @@ const update = async (phoneNumber, data) => {
 }
 
 const requestOtp = async ({ phoneNumber, actionType }) => {
-  // 1. Check number of request in 10 minutes
+  // Check if is a valid request
+  const user = await userModel.findOneByPhone(phoneNumber)
+
+  if (actionType === 'register') {
+    if (user)
+      throw new ApiError(StatusCodes.CONFLICT, 'Số điện thoại đã đăng ký!')
+  } else if (actionType === 'reset-password') {
+    if (!user)
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tồn tại!')
+  } else {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Yêu cầu không hợp lệ!')
+  }
+
+  // Check OTP request limit
   const key10min = `otp_counter:${phoneNumber}`
-  const count10min = await RedisProvider.get(key10min)
+  const count10min = parseInt((await RedisProvider.get(key10min)) || '0', 10)
   if (count10min >= env.REDIS_MAX_PER_10MIN) {
     throw new ApiError(
       StatusCodes.TOO_MANY_REQUESTS,
@@ -135,9 +148,8 @@ const requestOtp = async ({ phoneNumber, actionType }) => {
     )
   }
 
-  // 2. Check counter 24h
   const keyDay = `otp_daily_counter:${phoneNumber}`
-  const countDay = await RedisProvider.get(keyDay)
+  const countDay = parseInt((await RedisProvider.get(keyDay)) || '0', 10)
   if (countDay >= env.REDIS_MAX_PER_DAY) {
     throw new ApiError(
       StatusCodes.TOO_MANY_REQUESTS,
@@ -145,7 +157,7 @@ const requestOtp = async ({ phoneNumber, actionType }) => {
     )
   }
 
-  // 3. Update counter
+  // If valid request and in accept limit -> create OTP
   const newCount10min = await RedisProvider.incr(key10min)
   if (newCount10min === 1)
     await RedisProvider.expire(key10min, ms(env.REDIS_WINDOW_10MIN) / 1000)
@@ -153,24 +165,8 @@ const requestOtp = async ({ phoneNumber, actionType }) => {
   if (newCountDay === 1)
     await RedisProvider.expire(keyDay, ms(env.REDIS_WINDOW_1DAY) / 1000)
 
-  // 4. Process if valid
-  const user = await userModel.findOneByPhone(phoneNumber)
-
-  if (actionType === 'register') {
-    if (user)
-      throw new ApiError(StatusCodes.CONFLICT, 'Số điện thoại đã đăng ký!')
-    await TwilioProvider.sendVerification(phoneNumber)
-    return { counter: count10min + 1 }
-  }
-
-  if (actionType === 'reset-password') {
-    if (!user)
-      throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tồn tại!')
-    await TwilioProvider.sendVerification(phoneNumber)
-    return { counter: count10min + 1 }
-  }
-
-  throw new ApiError(StatusCodes.BAD_REQUEST, 'Yêu cầu không hợp lệ!')
+  await TwilioProvider.sendVerification(phoneNumber)
+  return { counter: newCount10min }
 }
 
 const verifyOtp = async ({ phoneNumber, code }) => {

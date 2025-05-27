@@ -54,9 +54,10 @@ const USER_COLLECTION_SCHEMA = Joi.object({
     .valid(USER_ROLES.CLIENT, USER_ROLES.ADMIN, USER_ROLES.STAFF)
     .default(USER_ROLES.CLIENT),
 
-  petIds: Joi.array()
-    .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
-    .default([]),
+  membershipId: Joi.string()
+    .pattern(OBJECT_ID_RULE)
+    .message(OBJECT_ID_RULE_MESSAGE)
+    .default(null),
 
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').default(null),

@@ -20,25 +20,13 @@ const START_SERVER = () => {
     next()
   })
 
-  // Cookie parser
   app.use(cookieParser())
-
-  // CORS
   app.use(cors(corsOptions))
-
-  // JSON body
   app.use(express.json())
 
-  // API v1 routes
+  // API version 1 routes
   app.use('/v1', APIs_V1)
-
-  // Error handler
   app.use(errorHandlingMiddleware)
-
-  // Health check
-  app.get('/', (req, res) => {
-    res.send('Backend coming soon ...')
-  })
 
   const port =
     env.BUILD_MODE === 'production' ? process.env.PORT : env.LOCAL_DEV_APP_PORT
@@ -54,7 +42,7 @@ const START_SERVER = () => {
     })
   }
 
-  // Cleanup before exit
+  // Cleanup mongodb connection before exit
   AsyncExitHook(() => {
     CLOSE_DB()
   })

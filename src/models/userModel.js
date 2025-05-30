@@ -30,6 +30,7 @@ const USER_COLLECTION_SCHEMA = Joi.object({
     .pattern(EMAIL_RULE)
     .message(EMAIL_RULE_MESSAGE)
     .default(null),
+  username: Joi.string().min(5).default(null),
   phoneNumber: Joi.string()
     .pattern(PHONE_RULE)
     .message(PHONE_RULE_MESSAGE)
@@ -103,6 +104,14 @@ const findOneByPhone = async phoneNumber => {
   }
 }
 
+const findOneByUserName = async userName => {
+  try {
+    return await GET_DB().collection(USER_COLLECTION_NAME).findOne({ userName })
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 const findOrCreateBySocial = async (provider, userData) => {
   try {
     const socialId = provider === 'google' ? userData.sub : userData.id
@@ -161,6 +170,7 @@ export const userModel = {
   createNew,
   findOneById,
   findOneByPhone,
+  findOneByUserName,
   findOrCreateBySocial,
   update
 }

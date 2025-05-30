@@ -26,8 +26,12 @@ const generateTokens = async userInfo => ({
 })
 
 const createNew = async data => {
-  const exists = await userModel.findOneByPhone(data.phoneNumber)
-  if (exists) throw new ApiError(StatusCodes.CONFLICT, 'Phone already exists')
+  // Check if account is already exists
+  const exists = data.userName
+    ? await userModel.findOneByUserName(data.userName)
+    : await userModel.findOneByPhone(data.phoneNumber)
+  if (exists)
+    throw new ApiError(StatusCodes.CONFLICT, 'Account is already exists!')
 
   data.password = await ArgonProvider.hashPassword(data.password)
   const { insertedId } = await userModel.createNew(data)

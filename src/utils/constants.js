@@ -1,7 +1,9 @@
 import { env } from '~/config/environment'
 export const WHITELIST_DOMAINS = [
   // 'http://localhost:5173' cause set for dev mode via cors.js
-  'https://petbox-client.vercel.app'
+  'https://petbox-client.vercel.app',
+  'http://localhost:3000',
+  'http://localhost'
   // Another the domain you want to whitelist
 ]
 

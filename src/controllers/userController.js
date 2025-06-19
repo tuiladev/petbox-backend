@@ -1,21 +1,27 @@
 import ms from 'ms'
-import ApiError from '~/utils/ApiError'
-import { env } from '~/config/environment'
+import ApiError from '~/utils/apiError'
+import { env } from '~/utils/environment'
 import { StatusCodes } from 'http-status-codes'
 import { userService } from '~/services/userService'
 
+/**
+ * Set access_token & refresh_token to cookies
+ */
 const setAuthCookies = (res, { accessToken, refreshToken }) => {
   const commonOpts = { httpOnly: true, secure: true, sameSite: 'none' }
   res.cookie('accessToken', accessToken, {
     ...commonOpts,
-    maxAge: ms(env.ACCESS_TOKEN_LIFE) + ms(env.BUFFER_TIME)
+    maxAge: ms(env.ACCESS_TOKEN_LIFE)
   })
   res.cookie('refreshToken', refreshToken, {
     ...commonOpts,
-    maxAge: ms(env.REFRESH_TOKEN_LIFE) + ms(env.BUFFER_TIME)
+    maxAge: ms(env.REFRESH_TOKEN_LIFE)
   })
 }
 
+/**
+ * Request controller for register new user account
+ */
 const createNew = async (req, res, next) => {
   try {
     const user = await userService.createNew(req.body)
@@ -26,6 +32,9 @@ const createNew = async (req, res, next) => {
   }
 }
 
+/**
+ * Request controller for login (with phone & password)
+ */
 const login = async (req, res, next) => {
   try {
     const result = await userService.login(req.body)
@@ -37,6 +46,9 @@ const login = async (req, res, next) => {
   }
 }
 
+/**
+ * Request controller for social login
+ */
 const socialLogin = async (req, res, next) => {
   try {
     const result = await userService.socialLogin(req.body)
@@ -48,6 +60,9 @@ const socialLogin = async (req, res, next) => {
   }
 }
 
+/**
+ * Request controller for logout
+ */
 const logout = (req, res, next) => {
   try {
     res.clearCookie('accessToken')
@@ -58,19 +73,25 @@ const logout = (req, res, next) => {
   }
 }
 
+/**
+ * Request controller for refresh access token
+ */
 const refreshToken = async (req, res, next) => {
   try {
     const tokens = await userService.refreshToken(req.cookies.refreshToken)
     setAuthCookies(res, tokens)
     res.status(StatusCodes.OK).json(tokens)
   } catch (err) {
-    next(new ApiError(StatusCodes.FORBIDDEN, 'Please sign in'))
+    next(err)
   }
 }
 
+/**
+ * Request controller for update user info
+ */
 const update = async (req, res, next) => {
   try {
-    const updatedUser = await userService.update(req.phoneNumber, req.body)
+    const updatedUser = await userService.update(req.phone, req.body)
     res.clearCookie('verifyToken')
     res.status(StatusCodes.OK).json(updatedUser)
   } catch (err) {
@@ -78,6 +99,9 @@ const update = async (req, res, next) => {
   }
 }
 
+/**
+ * Request controller for create OTP code
+ */
 const requestOtp = async (req, res, next) => {
   try {
     const result = await userService.requestOtp(req.body)
@@ -87,6 +111,9 @@ const requestOtp = async (req, res, next) => {
   }
 }
 
+/**
+ * Request controller for verify OTP code
+ */
 const verifyOtp = async (req, res, next) => {
   try {
     const verify_token = await userService.verifyOtp(req.body)

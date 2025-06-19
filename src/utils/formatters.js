@@ -1,13 +1,13 @@
 import { pick } from 'lodash'
 
-// Return some needed info to frontend
+// User DTO
 export const pickUser = user => {
   if (!user) return {}
   return pick(user, [
     'id',
     'fullName',
     'email',
-    'phoneNumber',
+    'phone',
     'birthDate',
     'avatar',
     'role',

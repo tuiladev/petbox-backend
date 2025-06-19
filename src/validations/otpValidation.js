@@ -1,6 +1,5 @@
-import { StatusCodes } from 'http-status-codes'
 import Joi from 'joi'
-import ApiError from '~/utils/ApiError'
+import { ValidationError } from '~/utils/apiError'
 import {
   PHONE_RULE,
   PHONE_RULE_MESSAGE,
@@ -12,23 +11,20 @@ import {
 
 const validateRequestOtp = async (req, res, next) => {
   const correctCondition = Joi.object({
-    phoneNumber: Joi.string().required().pattern(PHONE_RULE).messages({
-      'string.empty': FIELD_REQUIRED_RULE_MESSAGE,
-      'string.pattern.base': PHONE_RULE_MESSAGE
-    }),
+    phone: Joi.string().required().pattern(PHONE_RULE),
     actionType: Joi.string().required().valid('register', 'reset-password')
   })
   try {
     await correctCondition.validateAsync(req.body, { abortEarly: false })
     next()
   } catch (error) {
-    next(new ApiError(StatusCodes.BAD_REQUEST, new Error(error).message))
+    next(new ValidationError.fromJoi(error))
   }
 }
 
 const validateVerifyOtp = async (req, res, next) => {
   const correctCondition = Joi.object({
-    phoneNumber: Joi.string().required().pattern(PHONE_RULE).messages({
+    phone: Joi.string().required().pattern(PHONE_RULE).messages({
       'string.empty': FIELD_REQUIRED_RULE_MESSAGE,
       'string.pattern.base': PHONE_RULE_MESSAGE
     }),
@@ -42,7 +38,7 @@ const validateVerifyOtp = async (req, res, next) => {
     await correctCondition.validateAsync(req.body, { abortEarly: false })
     next()
   } catch (error) {
-    next(new ApiError(StatusCodes.BAD_REQUEST, new Error(error).message))
+    next(new ValidationError.fromJoi(error))
   }
 }
 

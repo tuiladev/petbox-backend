@@ -1,4 +1,4 @@
-import { env } from '~/config/environment'
+import { env } from '~/utils/environment'
 export const WHITELIST_DOMAINS = [
   // 'http://localhost:5173' cause set for dev mode via cors.js
   'https://petbox-client.vercel.app',
@@ -8,6 +8,6 @@ export const WHITELIST_DOMAINS = [
 ]
 
 export const WEBSITE_DOMAIN =
-  env.BUILD_MODE === 'dev'
+  env.BUILD_MODE !== 'production'
     ? env.WEBSITE_DOMAIN_DEVELOPMENT
     : env.WEBSITE_DOMAIN_PRODUCTION

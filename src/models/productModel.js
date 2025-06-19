@@ -1,7 +1,8 @@
 import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
-import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validator'
+import { OBJECT_ID_RULE } from '~/utils/validator'
+import { ValidationError } from '~/utils/apiError'
 
 // Collection name and Joi schema
 const PRODUCT_COLLECTION_NAME = 'products'
@@ -9,10 +10,7 @@ const PRODUCT_COLLECTION_SCHEMA = Joi.object({
   name: Joi.string().required().trim(),
   slug: Joi.string().required().trim(),
   description: Joi.string().default(''),
-  categoryId: Joi.string()
-    .pattern(OBJECT_ID_RULE)
-    .message(OBJECT_ID_RULE_MESSAGE)
-    .required(),
+  categoryId: Joi.string().pattern(OBJECT_ID_RULE).required(),
   images: Joi.array().items(Joi.string().uri()).default([]),
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').default(null)
@@ -35,7 +33,7 @@ const createNew = async data => {
       .insertOne(validData)
     return createdProduct
   } catch (error) {
-    throw new Error(error)
+    throw new ValidationError.fromJoi(error)
   }
 }
 

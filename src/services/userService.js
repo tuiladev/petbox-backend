@@ -1,7 +1,7 @@
 /* eslint-disable indent */
 import ms from 'ms'
-import { env } from '~/config/environment'
-import ApiError from '~/utils/ApiError'
+import { env } from '~/utils/environment'
+import { ApiError, SystemError, ERROR_CODES } from '~/utils/apiError'
 import { pickUser } from '~/utils/formatters'
 import { StatusCodes } from 'http-status-codes'
 import { userModel } from '~/models/userModel'
@@ -29,9 +29,13 @@ const createNew = async data => {
   // Check if account is already exists
   const exists = data.userName
     ? await userModel.findOneByUserName(data.userName)
-    : await userModel.findOneByPhone(data.phoneNumber)
+    : await userModel.findOneByPhone(data.phone)
   if (exists)
-    throw new ApiError(StatusCodes.CONFLICT, 'Account is already exists!')
+    throw new ApiError(
+      StatusCodes.CONFLICT,
+      ERROR_CODES.USER_ALREADY_EXISTS,
+      'The account is already exists!'
+    )
 
   data.password = await ArgonProvider.hashPassword(data.password)
   const { insertedId } = await userModel.createNew(data)
@@ -39,17 +43,26 @@ const createNew = async data => {
   return pickUser(user)
 }
 
-const login = async ({ phoneNumber, password }) => {
-  const user = await userModel.findOneByPhone(phoneNumber)
-  if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
+const login = async ({ phone, password }) => {
+  const user = await userModel.findOneByPhone(phone)
+  if (!user)
+    throw new ApiError(
+      StatusCodes.NOT_FOUND,
+      ERROR_CODES.USER_NOT_FOUND,
+      'Account not found'
+    )
   const valid = await ArgonProvider.verifyPasswordWithHash(
     password,
     user.password
   )
   if (!valid)
-    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid credentials')
+    throw new ApiError(
+      StatusCodes.UNAUTHORIZED,
+      ERROR_CODES.USER_INVALID_CREDENTIALS,
+      'Invalid credentials'
+    )
 
-  const payload = { _id: user._id, phoneNumber: user.phoneNumber }
+  const payload = { _id: user._id, phone: user.phone }
   const tokens = await generateTokens(payload)
   return { ...tokens, ...pickUser(user) }
 }
@@ -91,15 +104,20 @@ const refreshToken = async refreshToken => {
   )
   const tokens = await generateTokens({
     _id: decoded._id,
-    phoneNumber: decoded.phoneNumber
+    phone: decoded.phone
   })
   return tokens
 }
 
-const update = async (phoneNumber, data) => {
-  const user = await userModel.findOneByPhone(phoneNumber)
+const update = async (phone, data) => {
+  const user = await userModel.findOneByPhone(phone)
   const userId = user._id
-  if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
+  if (!user)
+    throw new ApiError(
+      StatusCodes.NOT_FOUND,
+      ERROR_CODES.USER_NOT_FOUND,
+      'Account not found'
+    )
 
   let updated
   // Check if user change password
@@ -111,6 +129,7 @@ const update = async (phoneNumber, data) => {
     if (!same)
       throw new ApiError(
         StatusCodes.NOT_ACCEPTABLE,
+        ERROR_CODES.USER_INVALID_CREDENTIALS,
         'Incorrect current password'
       )
   }
@@ -128,36 +147,50 @@ const update = async (phoneNumber, data) => {
   return pickUser(updated)
 }
 
-const requestOtp = async ({ phoneNumber, actionType }) => {
+const requestOtp = async ({ phone, actionType }) => {
   // Check if is a valid request
-  const user = await userModel.findOneByPhone(phoneNumber)
+  const user = await userModel.findOneByPhone(phone)
 
   if (actionType === 'register') {
     if (user)
-      throw new ApiError(StatusCodes.CONFLICT, 'Số điện thoại đã đăng ký!')
+      throw new ApiError(
+        StatusCodes.CONFLICT,
+        ERROR_CODES.USER_ALREADY_EXISTS,
+        'The phone number is already exists!'
+      )
   } else if (actionType === 'reset-password') {
     if (!user)
-      throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tồn tại!')
+      throw new ApiError(
+        StatusCodes.NOT_FOUND,
+        ERROR_CODES.USER_NOT_FOUND,
+        'The account is not exists!'
+      )
   } else {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Yêu cầu không hợp lệ!')
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      ERROR_CODES.REQUEST_INVALID,
+      'Your request is invalid!'
+    )
   }
 
   // Check OTP request limit
-  const key10min = `otp_counter:${phoneNumber}`
+  const key10min = `otp_counter:${phone}`
   const count10min = parseInt((await RedisProvider.get(key10min)) || '0', 10)
   if (count10min >= env.REDIS_MAX_PER_10MIN) {
     throw new ApiError(
       StatusCodes.TOO_MANY_REQUESTS,
-      'Bạn đã gửi quá số lần OTP trong 10 phút, vui lòng thử lại sau 10 phút!'
+      ERROR_CODES.REQUEST_EXCEED_ALLOWED,
+      'You have requested OTP code more times than allowed, please try again in 10 minutes!'
     )
   }
 
-  const keyDay = `otp_daily_counter:${phoneNumber}`
+  const keyDay = `otp_daily_counter:${phone}`
   const countDay = parseInt((await RedisProvider.get(keyDay)) || '0', 10)
   if (countDay >= env.REDIS_MAX_PER_DAY) {
     throw new ApiError(
       StatusCodes.TOO_MANY_REQUESTS,
-      'Bạn đã gửi quá số lần OTP trong ngày, vui lòng thử lại vào ngày mai!'
+      ERROR_CODES.REQUEST_EXCEED_ALLOWED,
+      'You have sent too many OTPs in a day, please try again tomorrow!'
     )
   }
 
@@ -169,23 +202,28 @@ const requestOtp = async ({ phoneNumber, actionType }) => {
   if (newCountDay === 1)
     await RedisProvider.expire(keyDay, ms(env.REDIS_WINDOW_1DAY) / 1000)
 
-  await TwilioProvider.sendVerification(phoneNumber)
+  await TwilioProvider.sendVerification(phone)
   return { counter: newCount10min }
 }
 
-const verifyOtp = async ({ phoneNumber, code }) => {
-  const result = await TwilioProvider.checkVerification(phoneNumber, code)
+const verifyOtp = async ({ phone, code }) => {
+  const result = await TwilioProvider.checkVerification(phone, code)
   if (result.status === 'pending') {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'OTP không hợp lệ')
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      ERROR_CODES.OTP_INVALID,
+      'Invalid OTP code!'
+    )
   }
   if (result.status === 'expired') {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
-      'OTP đã hết hạn, vui lòng yêu cầu mã mới'
+      ERROR_CODES.OTP_EXPRIRED,
+      'Your OTP code is exprired, please request new one!'
     )
   }
   if (result.status === 'approved') {
-    const payload = { phoneNumber }
+    const payload = { phone }
     return await JwtProvider.generateToken(
       payload,
       env.VERIFY_TOKEN_SECRET_SIGNATURE,
@@ -193,7 +231,10 @@ const verifyOtp = async ({ phoneNumber, code }) => {
     )
   }
 
-  throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Lỗi không mong muốn!')
+  throw new SystemError(
+    ERROR_CODES.SYSTEM_INTERNAL_ERROR,
+    'An unexpected error occurred. Please try again later!'
+  )
 }
 
 export const userService = {

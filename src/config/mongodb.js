@@ -1,5 +1,5 @@
 import { MongoClient, ServerApiVersion } from 'mongodb'
-import { env } from '~/config/environment'
+import { env } from '~/utils/environment'
 
 let petboxDatabase = null
 const mongoClient = new MongoClient(env.MONGODB_URI, {

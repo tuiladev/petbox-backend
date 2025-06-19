@@ -26,19 +26,10 @@ const USER_COLLECTION_SCHEMA = Joi.object({
   fullName: Joi.string().required().min(5).max(30).trim().strict(),
   birthDate: Joi.date().default(null),
   gender: Joi.string().valid('male', 'female', 'other').default(null),
-  email: Joi.string()
-    .pattern(EMAIL_RULE)
-    .message(EMAIL_RULE_MESSAGE)
-    .default(null),
+  email: Joi.string().pattern(EMAIL_RULE).default(null),
   username: Joi.string().min(5).default(null),
-  phoneNumber: Joi.string()
-    .pattern(PHONE_RULE)
-    .message(PHONE_RULE_MESSAGE)
-    .default(null),
-  password: Joi.string()
-    .pattern(PASSWORD_RULE)
-    .message(PASSWORD_RULE_MESSAGE)
-    .default(null),
+  phone: Joi.string().pattern(PHONE_RULE).default(null),
+  password: Joi.string().pattern(PASSWORD_RULE).default(null),
 
   // Unified social login IDs
   socialIds: Joi.array()
@@ -55,10 +46,7 @@ const USER_COLLECTION_SCHEMA = Joi.object({
     .valid(USER_ROLES.CLIENT, USER_ROLES.ADMIN, USER_ROLES.STAFF)
     .default(USER_ROLES.CLIENT),
 
-  membershipId: Joi.string()
-    .pattern(OBJECT_ID_RULE)
-    .message(OBJECT_ID_RULE_MESSAGE)
-    .default(null),
+  membershipId: Joi.string().pattern(OBJECT_ID_RULE).default(null),
 
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').default(null),
@@ -94,11 +82,9 @@ const findOneById = async userId => {
   }
 }
 
-const findOneByPhone = async phoneNumber => {
+const findOneByPhone = async phone => {
   try {
-    return await GET_DB()
-      .collection(USER_COLLECTION_NAME)
-      .findOne({ phoneNumber })
+    return await GET_DB().collection(USER_COLLECTION_NAME).findOne({ phone })
   } catch (error) {
     throw new Error(error)
   }

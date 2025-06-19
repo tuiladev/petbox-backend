@@ -25,4 +25,4 @@ yarn-error.log*
 .env
 /archive
 /.vscode
-serviceAccountKey.json
+/logs

@@ -1,5 +1,5 @@
 const brevo = require('@getbrevo/brevo')
-import { env } from '~/config/environment'
+import { env } from '~/utils/environment'
 
 let apiInstance = new brevo.TransactionalEmailsApi()
 let apiKey = apiInstance.authentications['apiKey']

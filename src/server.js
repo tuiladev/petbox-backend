@@ -1,60 +1,106 @@
-/* eslint-disable no-console */
+// Logger
+import { logger } from './config/logger.js'
+
+// Server
 import express from 'express'
+import helmet from 'helmet'
 import cors from 'cors'
-import { corsOptions } from './config/cors.js'
-import AsyncExitHook from 'async-exit-hook'
-import { env } from '~/config/environment'
-import { CONNECT_DB, CLOSE_DB } from '~/config/mongodb'
+import compression from 'compression'
+import { rateLimit } from 'express-rate-limit'
 import cookieParser from 'cookie-parser'
+import AsyncExitHook from 'async-exit-hook'
 
-// Routes
+// Config
+import { corsOptions } from './config/cors.js'
+import { env } from '~/utils/environment.js'
+import { CONNECT_DB, CLOSE_DB } from '~/config/mongodb'
+import { globalErrorHandler } from '~/middlewares/errorHandlerMiddleware.js'
+
+// Routes verion 1
 import { APIs_V1 } from '~/routes/v1'
-import { errorHandlingMiddleware } from '~/middlewares/errorHandlingMiddleware'
 
-const START_SERVER = () => {
+const CREATE_SERVER = () => {
+  // Create app instance
   const app = express()
 
-  // Fix web caching
+  // Header security set with Helmet
+  app.use(helmet())
+
+  // CORS config (allow postman to call api, localhost:5173, ...)
+  app.use(cors(corsOptions))
+
+  // Diable store cache with cache - control
   app.use((req, res, next) => {
     res.set('Cache-Control', 'no-store')
     next()
   })
 
+  // Improve loading speed by compressing response data with compression() method
+  if (env.BUILD_MODE === 'production') {
+    app.use(compression())
+  }
+
+  // Rate limiting with rateLimit from 'express-rate-limit'
+  //    15 minutes: 100 request/client in production mode
+  //                1000 request/client in development mode
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: env.BUILD_MODE === 'production' ? 100 : 1000,
+    message: { error: 'RATE_LIMIT_EXCEEDED' }
+  })
+  app.use(limiter)
+
+  // Cookie parser using 'cookie-parser'
   app.use(cookieParser())
-  app.use(cors(corsOptions))
+
+  // Body parser using express.json()
   app.use(express.json())
 
-  // API version 1 routes
+  // Using api version '/v1'
   app.use('/v1', APIs_V1)
-  app.use(errorHandlingMiddleware)
 
-  const port =
-    env.BUILD_MODE === 'production' ? process.env.PORT : env.LOCAL_DEV_APP_PORT
-  const host = env.LOCAL_DEV_APP_HOST
+  // Set global error handler middleware
+  app.use(globalErrorHandler)
 
-  if (env.BUILD_MODE === 'production') {
-    app.listen(port, () => {
-      console.log(`Render server is running at: ${port}`)
-    })
-  } else {
-    app.listen(port, host, () => {
-      console.log(`I am running at http://${host}:${port}/`)
-    })
-  }
-
-  // Cleanup mongodb connection before exit
-  AsyncExitHook(() => {
-    CLOSE_DB()
-  })
+  return app
 }
 
-;(async () => {
+const START_SERVER = async () => {
   try {
-    console.log('-> Connecting to MongoDB Cloud Atlas ...')
+    logger.info('Starting application...')
     await CONNECT_DB()
-    console.log('-> Connected to MongoDB Cloud Atlas!')
-    START_SERVER()
+    logger.info('Database connected successfully')
+
+    const app = CREATE_SERVER()
+    const port =
+      env.BUILD_MODE === 'production'
+        ? process.env.PORT || 3000
+        : env.LOCAL_DEV_APP_PORT
+
+    const server = app.listen(port, () => {
+      const address =
+        env.BUILD_MODE === 'production'
+          ? `Port ${port}`
+          : `http://${env.LOCAL_DEV_APP_HOST}:${port}`
+
+      logger.info(`Server is running at: ${address}`)
+    })
+
+    // Graceful shutdown
+    AsyncExitHook(async () => {
+      logger.info('Shutting down gracefully...')
+      server.close(() => {
+        logger.info('HTTP server closed')
+      })
+      await CLOSE_DB()
+      logger.info('Database connection closed')
+    })
+
+    return server
   } catch (error) {
-    console.error(error)
+    logger.error('Failed to start server:', error)
+    process.exit(1)
   }
-})()
+}
+
+START_SERVER()

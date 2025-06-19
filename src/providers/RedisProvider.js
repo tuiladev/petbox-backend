@@ -1,5 +1,5 @@
 import { createClient } from 'redis'
-import { env } from '~/config/environment'
+import { env } from '~/utils/environment'
 
 const client = createClient({
   username: env.REDIS_USERNAME,

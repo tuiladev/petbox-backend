@@ -1,4 +1,4 @@
-import { env } from '~/config/environment'
+import { env } from '~/utils/environment'
 
 const exchangeCodeForToken = async ({ authorization_code, codeVerifier }) => {
   const params = new URLSearchParams()

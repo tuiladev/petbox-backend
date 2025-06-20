@@ -1,4 +1,4 @@
-import { ApiError, SystemError } from '~/utils/apiError'
+import { ApiError, SystemError } from '~/utils/error'
 
 const createClientResponse = error => {
   if (error.isOperational) {

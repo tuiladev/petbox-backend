@@ -2,7 +2,7 @@ import { StatusCodes } from 'http-status-codes'
 import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
-import { ApiError, ERROR_CODES } from '~/utils/apiError'
+import { ApiError, ERROR_CODES } from '~/utils/error'
 import {
   OBJECT_ID_RULE,
   EMAIL_RULE,

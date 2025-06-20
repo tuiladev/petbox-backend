@@ -2,7 +2,7 @@ import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
 import { OBJECT_ID_RULE } from '~/utils/validator'
-import { ValidationError } from '~/utils/apiError'
+import { ValidationError } from '~/utils/error'
 
 // Collection name and Joi schema
 const PRODUCT_COLLECTION_NAME = 'products'

@@ -1,5 +1,5 @@
 import Joi from 'joi'
-import { ValidationError } from '~/utils/apiError'
+import { ValidationError } from '~/utils/error'
 
 const getProductBySlug = async (req, res, next) => {
   const correctCondition = Joi.object({

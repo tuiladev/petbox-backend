@@ -1,7 +1,7 @@
 /* eslint-disable indent */
 import ms from 'ms'
 import { env } from '~/utils/environment'
-import { ApiError, BusinessLogicError, ERROR_CODES } from '~/utils/apiError'
+import { ApiError, BusinessLogicError, ERROR_CODES } from '~/utils/error'
 import { pickUser } from '~/utils/formatters'
 import { StatusCodes } from 'http-status-codes'
 import { userModel } from '~/models/userModel'

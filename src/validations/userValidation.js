@@ -5,7 +5,7 @@ import {
   ValidationError,
   BusinessLogicError,
   ERROR_CODES
-} from '~/utils/apiError'
+} from '~/utils/error'
 import {
   EMAIL_RULE,
   PASSWORD_RULE,

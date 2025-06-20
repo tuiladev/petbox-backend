@@ -1,4 +1,4 @@
-const ERROR_CODES = {
+export const ERROR_CODES = {
   // REQUEST
   REQUEST_INVALID: 'REQUEST_INVALID',
   REQUEST_EXCEED_ALLOWED: 'REQUEST_EXCEED_ALLOWED',
@@ -43,7 +43,7 @@ const ERROR_CODES = {
   SYSTEM_SERVICE_UNAVAILABLE: 'SYSTEM_SERVICE_UNAVAILABLE'
 }
 
-class ApiError extends Error {
+export class ApiError extends Error {
   constructor(
     statusCode,
     errorCode,
@@ -66,7 +66,7 @@ class ApiError extends Error {
   }
 }
 
-class BusinessLogicError extends ApiError {
+export class BusinessLogicError extends ApiError {
   constructor(errorCode, message, details = {}, context = {}) {
     super(400, errorCode, message, true, context)
     this.type = 'BUSINESS_LOGIC'
@@ -74,7 +74,7 @@ class BusinessLogicError extends ApiError {
   }
 }
 
-class SystemError extends ApiError {
+export class SystemError extends ApiError {
   constructor(errorCode, message, originalError = null, context = {}) {
     super(500, errorCode, message, false, context)
     this.type = 'SYSTEM'
@@ -82,7 +82,7 @@ class SystemError extends ApiError {
   }
 }
 
-class ValidationError extends ApiError {
+export class ValidationError extends ApiError {
   constructor(fields, context = {}) {
     super(422, 'VALIDATION_FAILED', 'Input validation failed', true, context)
     this.type = 'VALIDATION'
@@ -116,13 +116,3 @@ class ValidationError extends ApiError {
     return new ValidationError(fields, context)
   }
 }
-
-module.exports = {
-  ERROR_CODES,
-  ApiError,
-  BusinessLogicError,
-  SystemError,
-  ValidationError
-}
-
-module.exports.default = ApiError

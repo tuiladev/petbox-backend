@@ -1,5 +1,5 @@
 import twilio from 'twilio'
-import { BusinessLogicError, ERROR_CODES } from '~/utils/apiError'
+import { BusinessLogicError, ERROR_CODES } from '~/utils/error'
 import { env } from '~/utils/environment'
 
 const client = twilio(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN)

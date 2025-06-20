@@ -1,5 +1,5 @@
 import { StatusCodes } from 'http-status-codes'
-import { ApiError, ERROR_CODES } from '~/utils/apiError'
+import { ApiError, ERROR_CODES } from '~/utils/error'
 import { productModel } from '~/models/productModel'
 
 export const getProductBySlug = async slug => {

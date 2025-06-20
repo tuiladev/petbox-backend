@@ -1,7 +1,7 @@
 import { StatusCodes } from 'http-status-codes'
 import { JwtProvider } from '~/providers/JwtProvider'
 import { env } from '~/utils/environment'
-import { ERROR_CODES, ApiError, BusinessLogicError } from '~/utils/apiError'
+import { ERROR_CODES, ApiError, BusinessLogicError } from '~/utils/error'
 
 /**
  * Ensure user is authorized before access

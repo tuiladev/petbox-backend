@@ -1,5 +1,5 @@
 import Joi from 'joi'
-import { ValidationError } from '~/utils/apiError'
+import { ValidationError } from '~/utils/error'
 import {
   PHONE_RULE,
   PHONE_RULE_MESSAGE,

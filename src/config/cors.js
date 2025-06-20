@@ -1,7 +1,7 @@
 import { WHITELIST_DOMAINS } from '~/utils/constants'
 import { env } from '~/utils/environment'
 import { StatusCodes } from 'http-status-codes'
-import { ApiError, ERROR_CODES } from '~/utils/apiError'
+import { ApiError, ERROR_CODES } from '../utils/apiError'
 
 /**
  * Cross origin resource sharing

@@ -5,13 +5,9 @@ import { GET_DB } from '~/config/mongodb'
 import { ApiError, ERROR_CODES } from '~/utils/apiError'
 import {
   OBJECT_ID_RULE,
-  OBJECT_ID_RULE_MESSAGE,
   EMAIL_RULE,
-  EMAIL_RULE_MESSAGE,
   PASSWORD_RULE,
-  PASSWORD_RULE_MESSAGE,
-  PHONE_RULE,
-  PHONE_RULE_MESSAGE
+  PHONE_RULE
 } from '~/utils/validator'
 
 // Define temp roles

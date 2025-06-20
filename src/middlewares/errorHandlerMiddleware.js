@@ -30,6 +30,7 @@ export const globalErrorHandler = (err, req, res, next) => {
     userAgent: req.get('User-Agent')
   }
 
+  console.error(err)
   let error = err
   if (!(err instanceof ApiError)) {
     // Standardlize all error if not ApiError

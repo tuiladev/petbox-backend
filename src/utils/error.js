@@ -40,10 +40,27 @@ export const ERROR_CODES = {
 
   // SYSTEM
   SYSTEM_INTERNAL_ERROR: 'SYSTEM_INTERNAL_ERROR',
-  SYSTEM_SERVICE_UNAVAILABLE: 'SYSTEM_SERVICE_UNAVAILABLE'
+  SYSTEM_EXTERNAL_ERROR: 'SYSTEM_EXTERNAL_ERROR',
+  SYSTEM_SERVICE_UNAVAILABLE: 'SYSTEM_SERVICE_UNAVAILABLE',
+
+  // DATABASE
+  DATABASE_ERROR: 'DATABASE_ERROR'
 }
 
+/**
+ * ApiError
+ * Base class for all API errors, extends JavaScript Error.
+ * Captures HTTP status, application-specific error code,
+ * operational flag, timestamp, and optional context for tracing.
+ */
 export class ApiError extends Error {
+  /**
+   * @param {number} statusCode - HTTP status code to return
+   * @param {string} errorCode - One of ERROR_CODES
+   * @param {string} message - Human-readable error message
+   * @param {boolean} isOperational - True if error is expected/handled
+   * @param {Object} context - Optional context (correlationId, request info)
+   */
   constructor(
     statusCode,
     errorCode,
@@ -58,15 +75,28 @@ export class ApiError extends Error {
     this.isOperational = isOperational
     this.timestamp = new Date().toISOString()
 
-    // Adding context data
+    // Optional tracing properties
     this.correlationId = context.correlationId || null
     this.request = context.request || null
 
+    // Capture stack trace excluding constructor
     Error.captureStackTrace(this, this.constructor)
   }
 }
 
+/**
+ * BusinessLogicError
+ * Represents client-triggered errors due to invalid operations
+ * (e.g., duplicate signup, unauthorized actions).
+ * Always returns HTTP 400 with a business-specific error code.
+ */
 export class BusinessLogicError extends ApiError {
+  /**
+   * @param {string} errorCode - Specific business logic error code
+   * @param {string} message - Description of the logical violation
+   * @param {any} details - Optional additional error details
+   * @param {Object} context - Optional tracing context
+   */
   constructor(errorCode, message, details = {}, context = {}) {
     super(400, errorCode, message, true, context)
     this.type = 'BUSINESS_LOGIC'
@@ -74,7 +104,18 @@ export class BusinessLogicError extends ApiError {
   }
 }
 
+/**
+ * SystemError
+ * Represents server-side failures (e.g., unhandled exceptions,
+ * downstream service failures). Always returns HTTP 500.
+ */
 export class SystemError extends ApiError {
+  /**
+   * @param {string} errorCode - Specific system error code
+   * @param {string} message - Description of the failure
+   * @param {Error|null} originalError - Underlying exception object
+   * @param {Object} context - Optional tracing context
+   */
   constructor(errorCode, message, originalError = null, context = {}) {
     super(500, errorCode, message, false, context)
     this.type = 'SYSTEM'
@@ -82,13 +123,29 @@ export class SystemError extends ApiError {
   }
 }
 
+/**
+ * ValidationError
+ * Captures schema validation failures (e.g., Joi errors).
+ * Returns HTTP 422 with field-specific error codes.
+ */
 export class ValidationError extends ApiError {
+  /**
+   * @param {Array<{field: string, errorCode: string}>} fields - List of field errors
+   * @param {Object} context - Optional tracing context
+   */
   constructor(fields, context = {}) {
     super(422, 'VALIDATION_FAILED', 'Input validation failed', true, context)
     this.type = 'VALIDATION'
     this.fields = fields
   }
 
+  /**
+   * Create ValidationError from Joi validation result
+   * Maps Joi error types to application error codes.
+   * @param {Object} joiError - Joi validation error object
+   * @param {Object} context - Optional tracing context
+   * @returns {ValidationError}
+   */
   static fromJoi(joiError, context = {}) {
     const joiToErrorCodeMap = {
       'string.pattern.base': ERROR_CODES.VALIDATION_PATTERN_MISMATCH,

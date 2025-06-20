@@ -67,7 +67,6 @@ const CREATE_SERVER = () => {
 
 const START_SERVER = async () => {
   try {
-    logger.info('Starting application...')
     await CONNECT_DB()
     logger.info('Database connected successfully')
 
@@ -87,8 +86,6 @@ const START_SERVER = async () => {
           : `http://${host}:${port}`
 
       logger.info(`🚀 Server is running at: ${address}`)
-      logger.info(`📊 Environment: ${env.BUILD_MODE}`)
-      logger.info(`🌐 Host: ${host}`)
     })
 
     server.on('error', error => {

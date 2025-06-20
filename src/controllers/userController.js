@@ -1,5 +1,4 @@
 import ms from 'ms'
-import ApiError from '~/utils/apiError'
 import { env } from '~/utils/environment'
 import { StatusCodes } from 'http-status-codes'
 import { userService } from '~/services/userService'
@@ -24,9 +23,11 @@ const setAuthCookies = (res, { accessToken, refreshToken }) => {
  */
 const createNew = async (req, res, next) => {
   try {
-    const user = await userService.createNew(req.body)
+    const result = await userService.createNew(req.body)
+    const { accessToken, refreshToken, ...payload } = result
+    setAuthCookies(res, result)
     res.clearCookie('verifyToken')
-    res.status(StatusCodes.CREATED).json(user)
+    return res.status(StatusCodes.OK).json(payload)
   } catch (err) {
     next(err)
   }
@@ -38,9 +39,9 @@ const createNew = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const result = await userService.login(req.body)
-    setAuthCookies(res, result)
     const { accessToken, refreshToken, ...payload } = result
-    res.status(StatusCodes.OK).json(payload)
+    setAuthCookies(res, result)
+    return res.status(StatusCodes.OK).json(payload)
   } catch (err) {
     next(err)
   }
@@ -52,9 +53,11 @@ const login = async (req, res, next) => {
 const socialLogin = async (req, res, next) => {
   try {
     const result = await userService.socialLogin(req.body)
-    setAuthCookies(res, result)
     const { accessToken, refreshToken, ...payload } = result
-    res.status(StatusCodes.OK).json(payload)
+
+    return req.body.key
+      ? res.status(StatusCodes.ACCEPTED).json(result)
+      : (setAuthCookies(res, result), res.status(StatusCodes.OK).json(payload))
   } catch (err) {
     next(err)
   }
@@ -67,7 +70,7 @@ const logout = (req, res, next) => {
   try {
     res.clearCookie('accessToken')
     res.clearCookie('refreshToken')
-    res.status(StatusCodes.OK).json({ loggedOut: true })
+    return res.status(StatusCodes.OK).json({ loggedOut: true })
   } catch (err) {
     next(err)
   }
@@ -80,7 +83,7 @@ const refreshToken = async (req, res, next) => {
   try {
     const tokens = await userService.refreshToken(req.cookies.refreshToken)
     setAuthCookies(res, tokens)
-    res.status(StatusCodes.OK).json(tokens)
+    return res.status(StatusCodes.OK).json(tokens)
   } catch (err) {
     next(err)
   }
@@ -91,9 +94,9 @@ const refreshToken = async (req, res, next) => {
  */
 const update = async (req, res, next) => {
   try {
-    const updatedUser = await userService.update(req.phone, req.body)
+    const updatedUser = await userService.update(req.body)
     res.clearCookie('verifyToken')
-    res.status(StatusCodes.OK).json(updatedUser)
+    return res.status(StatusCodes.OK).json(updatedUser)
   } catch (err) {
     next(err)
   }

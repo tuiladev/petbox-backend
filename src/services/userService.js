@@ -1,7 +1,7 @@
 /* eslint-disable indent */
 import ms from 'ms'
 import { env } from '~/utils/environment'
-import { ApiError, SystemError, ERROR_CODES } from '~/utils/apiError'
+import { ApiError, BusinessLogicError, ERROR_CODES } from '~/utils/apiError'
 import { pickUser } from '~/utils/formatters'
 import { StatusCodes } from 'http-status-codes'
 import { userModel } from '~/models/userModel'
@@ -26,28 +26,53 @@ const generateTokens = async userInfo => ({
 })
 
 const createNew = async data => {
-  // Check if account is already exists
+  // Get redis data if register with soical account
+  if (data.key && data.type === 'social') {
+    const redisData = await RedisProvider.get(data.key)
+    if (!redisData)
+      throw new BusinessLogicError(
+        ERROR_CODES.TOKEN_EXPIRED,
+        'Your social login key is invalid or expired!'
+      )
+
+    const { provider, socialId, avatar, email } = JSON.parse(redisData)
+
+    data.email = email
+    data.avatar = avatar
+    data.socialIds = [{ provider, id: socialId }]
+  }
+
+  // Check if user is already exists
   const exists = data.userName
     ? await userModel.findOneByUserName(data.userName)
     : await userModel.findOneByPhone(data.phone)
-  if (exists)
-    throw new ApiError(
-      StatusCodes.CONFLICT,
-      ERROR_CODES.USER_ALREADY_EXISTS,
-      'The account is already exists!'
-    )
 
-  data.password = await ArgonProvider.hashPassword(data.password)
+  if (exists) {
+    throw new BusinessLogicError(
+      ERROR_CODES.USER_ALREADY_EXISTS,
+      'The account already exists!'
+    )
+  }
+
+  // Hash password in case register with normal flow
+  if (data.password && data.type === 'normal') {
+    data.password = await ArgonProvider.hashPassword(data.password)
+  }
+
+  // Create new user
   const { insertedId } = await userModel.createNew(data)
   const user = await userModel.findOneById(insertedId)
-  return pickUser(user)
+
+  // Generate token
+  const payload = { _id: user._id, phone: user.phone }
+  const tokens = await generateTokens(payload)
+  return { ...tokens, ...pickUser(user) }
 }
 
 const login = async ({ phone, password }) => {
   const user = await userModel.findOneByPhone(phone)
   if (!user)
-    throw new ApiError(
-      StatusCodes.NOT_FOUND,
+    throw new BusinessLogicError(
       ERROR_CODES.USER_NOT_FOUND,
       'Account not found'
     )
@@ -56,8 +81,7 @@ const login = async ({ phone, password }) => {
     user.password
   )
   if (!valid)
-    throw new ApiError(
-      StatusCodes.UNAUTHORIZED,
+    throw new BusinessLogicError(
       ERROR_CODES.USER_INVALID_CREDENTIALS,
       'Invalid credentials'
     )
@@ -91,10 +115,28 @@ const socialLogin = async ({
           tokenData.refresh_token
         )
 
-  const user = await userModel.findOrCreateBySocial(provider, userData)
-  const payload = { _id: user._id }
-  const tokens = await generateTokens(payload)
-  return { ...tokens, ...pickUser(user) }
+  const socialId = provider === 'google' ? userData.sub : userData.id
+  const user = await userModel.findOneBySocialId(provider, socialId)
+
+  // If user is already exists just return token
+  if (user) {
+    const payload = { _id: user._id, phone: user.phone }
+    const tokens = await generateTokens(payload)
+    return { ...tokens, ...pickUser(user) }
+  } else {
+    // User not found -> Store temp info to redis
+    const key = `social:pending:${provider}:${socialId}`
+    const name = userData.name
+    const email = userData.email || ''
+    const avatar = userData.picture || userData.avatar
+    const info = { provider, socialId, avatar, email }
+
+    // TTL 10 minutes
+    await RedisProvider.set(key, JSON.stringify(info), env.VERIFY_TOKEN_LIFE)
+
+    // Return to client
+    return { key, name, email }
+  }
 }
 
 const refreshToken = async refreshToken => {
@@ -109,8 +151,8 @@ const refreshToken = async refreshToken => {
   return tokens
 }
 
-const update = async (phone, data) => {
-  const user = await userModel.findOneByPhone(phone)
+const update = async data => {
+  const user = await userModel.findOneByPhone(data.phone)
   const userId = user._id
   if (!user)
     throw new ApiError(
@@ -120,6 +162,7 @@ const update = async (phone, data) => {
     )
 
   let updated
+
   // Check if user change password
   if (data.currentPassword && data.newPassword) {
     const same = await ArgonProvider.verifyPasswordWithHash(
@@ -134,7 +177,7 @@ const update = async (phone, data) => {
       )
   }
 
-  // Update password (in 2 cases: change OR reset password)
+  // Check if user reset password
   if (data.newPassword) {
     updated = await userModel.update(userId, {
       password: await ArgonProvider.hashPassword(data.newPassword)
@@ -209,17 +252,9 @@ const requestOtp = async ({ phone, actionType }) => {
 const verifyOtp = async ({ phone, code }) => {
   const result = await TwilioProvider.checkVerification(phone, code)
   if (result.status === 'pending') {
-    throw new ApiError(
-      StatusCodes.BAD_REQUEST,
+    throw new BusinessLogicError(
       ERROR_CODES.OTP_INVALID,
-      'Invalid OTP code!'
-    )
-  }
-  if (result.status === 'expired') {
-    throw new ApiError(
-      StatusCodes.BAD_REQUEST,
-      ERROR_CODES.OTP_EXPRIRED,
-      'Your OTP code is exprired, please request new one!'
+      'Invalid OTP code. Please try again!'
     )
   }
   if (result.status === 'approved') {
@@ -230,11 +265,6 @@ const verifyOtp = async ({ phone, code }) => {
       env.VERIFY_TOKEN_LIFE
     )
   }
-
-  throw new SystemError(
-    ERROR_CODES.SYSTEM_INTERNAL_ERROR,
-    'An unexpected error occurred. Please try again later!'
-  )
 }
 
 export const userService = {

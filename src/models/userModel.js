@@ -1,6 +1,8 @@
+import { StatusCodes } from 'http-status-codes'
 import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
+import { ApiError, ERROR_CODES } from '~/utils/apiError'
 import {
   OBJECT_ID_RULE,
   OBJECT_ID_RULE_MESSAGE,
@@ -98,31 +100,18 @@ const findOneByUserName = async userName => {
   }
 }
 
-const findOrCreateBySocial = async (provider, userData) => {
+const findOneBySocialId = async (provider, socialId) => {
   try {
-    const socialId = provider === 'google' ? userData.sub : userData.id
-
-    // Find user by social ID
-    let user = await GET_DB()
-      .collection(USER_COLLECTION_NAME)
-      .findOne({
-        socialIds: { $elemMatch: { provider, id: socialId } }
-      })
-    if (user) return user
-
-    // Create new user if not found
-    const newUser = {
-      fullName: userData.name,
-      email: userData.email || '',
-      socialIds: [{ provider, id: socialId }],
-      avatar: userData.picture || userData.avatar
-    }
-    const result = await createNew(newUser)
-
-    // Return to service
     return await GET_DB()
       .collection(USER_COLLECTION_NAME)
-      .findOne({ _id: result.insertedId })
+      .findOne({
+        socialIds: {
+          $elemMatch: {
+            provider,
+            id: socialId
+          }
+        }
+      })
   } catch (error) {
     throw new Error(error)
   }
@@ -146,7 +135,12 @@ const update = async (userId, updateData) => {
       )
     return result
   } catch (error) {
-    throw new Error(error)
+    throw new ApiError(
+      StatusCodes.BAD_GATEWAY,
+      ERROR_CODES.USER_FORBIDDEN,
+      'khong biet',
+      true
+    )
   }
 }
 
@@ -157,6 +151,6 @@ export const userModel = {
   findOneById,
   findOneByPhone,
   findOneByUserName,
-  findOrCreateBySocial,
+  findOneBySocialId,
   update
 }

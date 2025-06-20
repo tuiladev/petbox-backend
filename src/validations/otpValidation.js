@@ -24,15 +24,8 @@ const validateRequestOtp = async (req, res, next) => {
 
 const validateVerifyOtp = async (req, res, next) => {
   const correctCondition = Joi.object({
-    phone: Joi.string().required().pattern(PHONE_RULE).messages({
-      'string.empty': FIELD_REQUIRED_RULE_MESSAGE,
-      'string.pattern.base': PHONE_RULE_MESSAGE
-    }),
-    code: Joi.string().length(4).required().pattern(OTP_RULE).messages({
-      'string.empty': FIELD_REQUIRED_RULE_MESSAGE,
-      'string.length': OTP_LENGTH_MESSAGE,
-      'string.pattern.base': OTP_RULE_MESSAGE
-    })
+    phone: Joi.string().required().pattern(PHONE_RULE),
+    code: Joi.string().length(4).required().pattern(OTP_RULE)
   })
   try {
     await correctCondition.validateAsync(req.body, { abortEarly: false })

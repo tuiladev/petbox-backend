@@ -1,7 +1,7 @@
 import { StatusCodes } from 'http-status-codes'
 import { JwtProvider } from '~/providers/JwtProvider'
 import { env } from '~/utils/environment'
-import { ERROR_CODES, ApiError } from '~/utils/apiError'
+import { ERROR_CODES, ApiError, BusinessLogicError } from '~/utils/apiError'
 
 /**
  * Ensure user is authorized before access
@@ -19,7 +19,6 @@ const isAuthorized = async (req, res, next) => {
         'Unauthorized (token not found)'
       )
     )
-    return
   }
 
   try {
@@ -30,19 +29,18 @@ const isAuthorized = async (req, res, next) => {
     )
 
     // Return phone for searching...
-    req.phone = accessTokenDecoded.phone
+    req.body.phone = accessTokenDecoded.phone
     next()
   } catch (error) {
-    // Access token is exprired
+    // Access token is EXPIRED
     if (error?.message?.includes('jwt expired')) {
       next(
         new ApiError(
           StatusCodes.GONE,
-          ERROR_CODES.TOKEN_EXPRIRED,
+          ERROR_CODES.TOKEN_EXPIRED,
           'Need to refresh token'
         )
       )
-      return
     }
 
     // Another error, return to frontend and logout
@@ -63,28 +61,30 @@ const isVerifyOTP = async (req, res, next) => {
   try {
     const verifyToken = req.cookies?.verifyToken
     if (!verifyToken)
-      throw new ApiError(
-        StatusCodes.NOT_ACCEPTABLE,
-        ERROR_CODES.USER_UNAUTHORIZED,
-        'Please verify otp first!'
+      next(
+        new BusinessLogicError(
+          ERROR_CODES.USER_UNAUTHORIZED,
+          'Please verify otp first!'
+        )
       )
 
-    const decoded = await JwtProvider.verifyToken(
+    const verifyTokenDecoded = await JwtProvider.verifyToken(
       verifyToken,
       env.VERIFY_TOKEN_SECRET_SIGNATURE
     )
 
-    // ensure user have register with a verify phone number
-    req.body.phone = decoded.phone
+    // Ensure user have register with a verify phone number
+    req.body.phone = verifyTokenDecoded.phone
     next()
   } catch (error) {
-    next(
-      new ApiError(
-        StatusCodes.NOT_ACCEPTABLE,
-        ERROR_CODES.TOKEN_EXPRIRED,
-        'Section is exprired, please try again!'
+    if (error?.message?.includes('jwt expired')) {
+      next(
+        new BusinessLogicError(
+          ERROR_CODES.TOKEN_EXPIRED,
+          'Section is EXPIRED, please try again!'
+        )
       )
-    )
+    }
   }
 }
 

@@ -74,16 +74,26 @@ const START_SERVER = async () => {
     const app = CREATE_SERVER()
     const port =
       env.BUILD_MODE === 'production'
-        ? process.env.PORT || 3000
+        ? process.env.PORT
         : env.LOCAL_DEV_APP_PORT
 
-    const server = app.listen(port, () => {
+    const host =
+      env.BUILD_MODE === 'production' ? '0.0.0.0' : env.LOCAL_DEV_APP_HOST
+
+    const server = app.listen(port, host, () => {
       const address =
         env.BUILD_MODE === 'production'
           ? `Port ${port}`
-          : `http://${env.LOCAL_DEV_APP_HOST}:${port}`
+          : `http://${host}:${port}`
 
-      logger.info(`Server is running at: ${address}`)
+      logger.info(`🚀 Server is running at: ${address}`)
+      logger.info(`📊 Environment: ${env.BUILD_MODE}`)
+      logger.info(`🌐 Host: ${host}`)
+    })
+
+    server.on('error', error => {
+      logger.error('❌ Server error:', error)
+      process.exit(1)
     })
 
     // Graceful shutdown

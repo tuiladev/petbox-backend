@@ -1,7 +1,6 @@
 import { WHITELIST_DOMAINS } from '~/utils/constants'
 import { env } from '~/utils/environment'
-import { StatusCodes } from 'http-status-codes'
-import { ApiError, ERROR_CODES } from '../utils/apiError.js'
+import { BusinessLogicError, ERROR_CODES } from '~/utils/apiError.js'
 
 /**
  * Cross origin resource sharing
@@ -20,8 +19,7 @@ export const corsOptions = {
 
     // Throw error if invalid domain
     return callback(
-      new ApiError(
-        StatusCodes.FORBIDDEN,
+      new BusinessLogicError(
         ERROR_CODES.REQUEST_INVALID,
         `${origin} not allowed by our CORS Policy.`
       )

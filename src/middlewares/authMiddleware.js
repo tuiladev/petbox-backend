@@ -17,7 +17,8 @@ export const isAuthorized = async (req, res, next) => {
   if (!token) {
     // No token: user is unauthorized
     return next(
-      new BusinessLogicError(
+      new ApiError(
+        StatusCodes.GONE,
         ERROR_CODES.USER_UNAUTHORIZED,
         'Unauthorized: token not found'
       )
@@ -46,7 +47,8 @@ export const isAuthorized = async (req, res, next) => {
     }
     // 3b. Any other token error: unauthorized
     return next(
-      new BusinessLogicError(
+      new ApiError(
+        StatusCodes.GONE,
         ERROR_CODES.USER_UNAUTHORIZED,
         'Unauthorized: invalid token'
       )
@@ -69,7 +71,8 @@ export const isVerifyOTP = async (req, res, next) => {
   const token = req.cookies?.verifyToken
   if (!token) {
     return next(
-      new BusinessLogicError(
+      new ApiError(
+        StatusCodes.GONE,
         ERROR_CODES.USER_UNAUTHORIZED,
         'Please verify OTP first'
       )

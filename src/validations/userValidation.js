@@ -90,7 +90,7 @@ export const login = async (req, res, next) => {
   const correctCondition = Joi.object({
     phone: Joi.string().pattern(PHONE_RULE),
     username: Joi.string().min(5).max(20).pattern(USERNAME_RULE),
-    password: Joi.string().pattern(PASSWORD_RULE).required()
+    password: Joi.string().required()
   })
   try {
     await correctCondition.validateAsync(req.body, { abortEarly: false })
@@ -169,13 +169,15 @@ export const socialLogin = (req, res, next) => {
  * Middleware to validate user profile update payload.
  * - Allows updating fullName, email, phone, password, newPassword.
  */
-export const updateValidation = async (req, res, next) => {
+export const update = async (req, res, next) => {
   const correctCondition = Joi.object({
     fullName: Joi.string().min(5).max(30).trim(),
     email: Joi.string().pattern(EMAIL_RULE),
     phone: Joi.string().pattern(PHONE_RULE),
     password: Joi.string().pattern(PASSWORD_RULE),
-    newPassword: Joi.string().pattern(PASSWORD_RULE)
+    currentPassword: Joi.string().pattern(PASSWORD_RULE),
+    newPassword: Joi.string().pattern(PASSWORD_RULE),
+    avatar: Joi.string()
   })
   try {
     await correctCondition.validateAsync(req.body, { abortEarly: false })
@@ -192,5 +194,5 @@ export const userValidation = {
   verifyAccount,
   login,
   socialLogin,
-  update: updateValidation
+  update
 }

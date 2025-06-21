@@ -115,7 +115,7 @@ export const createNew = async data => {
  * Authenticate user using phone and password.
  */
 export const login = async ({ phone, password }) => {
-  logger.info('userService.login called for phone:', phone)
+  logger.info(`userService.login called for phone: ${phone}`)
   const user = await userModel.findOneByPhone(phone)
   if (!user) {
     logger.warn('Login failed: user not found for phone', phone)

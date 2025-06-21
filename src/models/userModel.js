@@ -119,7 +119,7 @@ const findOneByPhone = async phone => {
     const user = await GET_DB()
       .collection(USER_COLLECTION_NAME)
       .findOne({ phone })
-    logger.info(`User fetched by phone: ${user}`)
+    logger.info('User fetched by phone:', user)
     return user
   } catch (error) {
     logger.error('Error fetching user by phone:', error)
